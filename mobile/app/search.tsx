@@ -84,6 +84,12 @@ export default function SearchScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{item.name}</Text>
                   <Text style={styles.brand}>{item.brand}</Text>
+                  {item.confidence ? (
+                    <Text style={styles.brand}>
+                      {item.isUsSold ? 'U.S. · ' : ''}
+                      {item.confidence} confidence
+                    </Text>
+                  ) : null}
                 </View>
               </Pressable>
             )}
