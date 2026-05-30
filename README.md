@@ -93,3 +93,14 @@ npm run dev
 ## Scoring
 
 Each of your active goals contributes a subscore (0–100) based on per-100g nutrition and ingredient signals. Your slider weights (0–10) produce a weighted overall score — two users can see different scores for the same product.
+
+
+## iOS app (Expo)
+
+See **[mobile/README.md](./mobile/README.md)** for running 3Bite on iPhone with Expo Go.
+
+```bash
+npm run dev:server          # API on :3001
+cd mobile && cp .env.example .env   # set EXPO_PUBLIC_API_URL to your Mac IP
+npm run dev:mobile          # or: cd mobile && npx expo start
+```
