@@ -4,8 +4,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, ErrorBanner, Subtitle, Title } from '../../src/components/ui';
 import { WeightStepper } from '../../src/components/WeightStepper';
 import { GOAL_KEYS, GOAL_META, type GoalKey } from '../../src/constants/goals';
-import { api } from '../../src/api/client';
-import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 
 export default function OnboardingSlidersScreen() {
@@ -21,7 +19,6 @@ export default function OnboardingSlidersScreen() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { updateUser } = useAuth();
   const router = useRouter();
 
   const finish = async () => {
@@ -30,13 +27,13 @@ export default function OnboardingSlidersScreen() {
     try {
       const goalWeights: Record<string, number> = {};
       for (const k of GOAL_KEYS) goalWeights[k] = selected.includes(k) ? weights[k] ?? 5 : 0;
-      const { user } = await api.updateProfile({
-        selectedGoals: selected,
-        goalWeights,
-        onboardingComplete: true,
+      router.push({
+        pathname: '/(onboarding)/ingredients',
+        params: { goals: selected.join(','), weights: JSON.stringify(
+          Object.fromEntries(selected.map((k) => [k, Math.round(weights[k] ?? 5)]))
+        ) },
       });
-      updateUser(user);
-      router.replace('/(tabs)');
+      return;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save preferences');
     } finally {
@@ -60,7 +57,7 @@ export default function OnboardingSlidersScreen() {
           />
         </View>
       ))}
-      <Button label="Start scanning" onPress={finish} loading={loading} />
+      <Button label="Next: ingredient preferences" onPress={finish} loading={loading} />
     </ScrollView>
   );
 }

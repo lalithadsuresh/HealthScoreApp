@@ -1,10 +1,10 @@
 import { GOAL_KEYS, GOAL_LABELS } from '../constants/goals.js';
+import { analyzeIngredientPreferences } from './ingredientScoring.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
 }
 
-/** Higher raw value is better → map to 0–100 */
 function scoreHigher(value, goodAt, poorAt) {
   if (value == null) return 50;
   if (value >= goodAt) return 100;
@@ -12,7 +12,6 @@ function scoreHigher(value, goodAt, poorAt) {
   return clamp(((value - poorAt) / (goodAt - poorAt)) * 100);
 }
 
-/** Lower raw value is better → map to 0–100 */
 function scoreLower(value, goodAt, poorAt) {
   if (value == null) return 50;
   if (value <= goodAt) return 100;
@@ -70,7 +69,6 @@ function computeGoalSubscore(goalKey, product) {
 function explainSubscore(goalKey, subscore, product) {
   const n = product.nutriments ?? {};
   const label = GOAL_LABELS[goalKey];
-
   const positives = [];
   const negatives = [];
 
@@ -82,42 +80,178 @@ function explainSubscore(goalKey, subscore, product) {
   switch (goalKey) {
     case 'buildMuscle':
     case 'highProtein':
-      add(n.protein >= 15, `Strong protein (${n.protein ?? '?'}g/100g)`, 'Low protein for your muscle goals');
+      add(
+        n.protein != null && n.protein >= 15,
+        `High protein (${n.protein}g/100g) matched your ${label} priority.`,
+        `Protein is relatively low for your ${label} setting.`
+      );
       break;
     case 'loseWeight':
-      add(n.energyKcal != null && n.energyKcal <= 200, 'Relatively low calories per 100g', 'Higher calorie density');
+      add(
+        n.energyKcal != null && n.energyKcal <= 200,
+        `Calories per 100g are relatively low for your ${label} priority.`,
+        `Calorie density is higher than ideal for your ${label} setting.`
+      );
       break;
     case 'lowSugar':
-      add(n.sugar != null && n.sugar <= 8, 'Lower sugar content', 'Sugar is relatively high');
+      add(
+        n.sugar != null && n.sugar <= 8,
+        `Sugar is within a range that fits your ${label} preference.`,
+        `Sugar is above what you prefer for ${label}.`
+      );
       break;
     case 'highFiber':
-      add(n.fiber >= 5, 'Good fiber content', 'Low fiber');
+      add(
+        n.fiber != null && n.fiber >= 5,
+        `Fiber content supports your ${label} priority.`,
+        `Fiber is low relative to your ${label} setting.`
+      );
       break;
     case 'lowSodium':
-      add(n.sodium != null && n.sodium <= 400, 'Moderate sodium', 'High sodium');
+      add(
+        n.sodium != null && n.sodium <= 400,
+        `Sodium is moderate for your ${label} preference.`,
+        `Sodium is high for your ${label} setting.`
+      );
       break;
     case 'cleanIngredients':
-      if ((product.additivesCount ?? 0) <= 2) positives.push('Few additives');
-      else negatives.push('Several additives detected');
-      if (product.novaGroup === 1 || product.novaGroup === 2) positives.push('Less processed (NOVA 1–2)');
-      else if (product.novaGroup >= 3) negatives.push('More ultra-processed');
+      if ((product.additivesCount ?? 0) <= 2) {
+        positives.push(`Fewer additives aligns with your ${label} preference.`);
+      } else {
+        negatives.push(`More additives than you prefer for ${label}.`);
+      }
       break;
     case 'heartHealth':
-      if (n.saturatedFat != null && n.saturatedFat <= 5) positives.push('Lower saturated fat');
-      else negatives.push('Saturated fat could be lower');
+      if (n.saturatedFat != null && n.saturatedFat <= 5) {
+        positives.push(`Saturated fat is moderate for your ${label} priority.`);
+      } else {
+        negatives.push(`Saturated fat is high for your ${label} setting.`);
+      }
+      if (n.sodium != null && n.sodium > 500) {
+        negatives.push(`Sodium is high for your ${label} setting.`);
+      }
       break;
     case 'bloodSugarControl':
-      if (n.sugar != null && n.sugar <= 10) positives.push('Sugar-friendly for blood sugar goals');
-      else negatives.push('Sugar/carbs may spike blood sugar');
+      if (n.sugar != null && n.sugar <= 10) {
+        positives.push(`Sugar level fits your ${label} preference.`);
+      } else {
+        negatives.push(`Sugar is above your ${label} preference.`);
+      }
       break;
     default:
       break;
   }
 
-  if (subscore >= 70 && positives.length === 0) positives.push(`Aligns well with ${label}`);
-  if (subscore < 50 && negatives.length === 0) negatives.push(`Does not strongly match ${label}`);
+  if (subscore >= 70 && positives.length === 0) {
+    positives.push(`Aligns with your ${label} priority.`);
+  }
+  if (subscore < 50 && negatives.length === 0) {
+    negatives.push(`Below your ${label} preference.`);
+  }
 
   return { label, positives, negatives, subscore };
+}
+
+function impactFromSubscore(subscore) {
+  if (subscore >= 65) return 'positive';
+  if (subscore <= 45) return 'negative';
+  return 'neutral';
+}
+
+function buildNutrientContributions(product, breakdown, ingredientAnalysis, activeGoals) {
+  const n = product.nutriments ?? {};
+  const byGoal = Object.fromEntries(breakdown.map((b) => [b.goalKey, b]));
+
+  const avgForGoals = (keys) => {
+    const items = keys.filter((k) => activeGoals.includes(k) && byGoal[k]);
+    if (!items.length) return null;
+    return Math.round(items.reduce((s, k) => s + byGoal[k].subscore, 0) / items.length);
+  };
+
+  const proteinScore = avgForGoals(['buildMuscle', 'highProtein']);
+  const calorieScore = avgForGoals(['loseWeight']);
+  const sugarScore = avgForGoals(['lowSugar', 'bloodSugarControl']);
+  const fiberScore = avgForGoals(['highFiber', 'heartHealth']);
+  const sodiumScore = avgForGoals(['lowSodium', 'heartHealth']);
+  const satFatScore = byGoal.heartHealth ? byGoal.heartHealth.subscore : null;
+
+  const cleanScore = byGoal.cleanIngredients?.subscore ?? null;
+  const ingredientQualityScore =
+    cleanScore != null && ingredientAnalysis.hasEnabledPrefs
+      ? Math.round((cleanScore + ingredientAnalysis.subscore) / 2)
+      : cleanScore ?? (ingredientAnalysis.hasEnabledPrefs ? ingredientAnalysis.subscore : null);
+
+  const mk = (key, label, score, detail) => {
+    if (score == null) {
+      return {
+        key,
+        label,
+        score: null,
+        impact: 'neutral',
+        summary: 'Not weighted in your current goals or preferences.',
+        detail,
+      };
+    }
+    return {
+      key,
+      label,
+      score,
+      impact: impactFromSubscore(score),
+      summary: detail,
+      detail,
+    };
+  };
+
+  return {
+    protein: mk(
+      'protein',
+      'Protein',
+      proteinScore,
+      proteinScore != null
+        ? `Protein per 100g: ${n.protein ?? '—'}g`
+        : 'Enable a protein-related goal to weight protein.'
+    ),
+    calories: mk(
+      'calories',
+      'Calories',
+      calorieScore,
+      calorieScore != null ? `Energy per 100g: ${n.energyKcal ?? '—'} kcal` : 'Enable Lose weight to weight calories.'
+    ),
+    fiber: mk(
+      'fiber',
+      'Fiber',
+      fiberScore,
+      fiberScore != null ? `Fiber per 100g: ${n.fiber ?? '—'}g` : 'Enable a fiber-related goal to weight fiber.'
+    ),
+    sugar: mk(
+      'sugar',
+      'Sugar',
+      sugarScore,
+      sugarScore != null ? `Sugar per 100g: ${n.sugar ?? '—'}g` : 'Enable a sugar-related goal to weight sugar.'
+    ),
+    sodium: mk(
+      'sodium',
+      'Sodium',
+      sodiumScore,
+      sodiumScore != null ? `Sodium per 100g: ${n.sodium ?? '—'}mg` : 'Enable a sodium-related goal to weight sodium.'
+    ),
+    saturatedFat: mk(
+      'saturatedFat',
+      'Saturated fat',
+      satFatScore,
+      satFatScore != null
+        ? `Saturated fat per 100g: ${n.saturatedFat ?? '—'}g`
+        : 'Enable Heart health to weight saturated fat.'
+    ),
+    ingredientQuality: mk(
+      'ingredientQuality',
+      'Ingredient quality',
+      ingredientQualityScore,
+      ingredientQualityScore != null
+        ? 'Based on your clean-ingredient goals and optional ingredient preferences.'
+        : 'Turn on Clean ingredients or an ingredient preference to weight this.'
+    ),
+  };
 }
 
 export function scoreProduct(product, user) {
@@ -154,31 +288,75 @@ export function scoreProduct(product, user) {
     weightTotal += w;
   }
 
-  const overallScore = Math.round(weightedSum / weightTotal);
+  const goalOnlyScore = Math.round(weightedSum / weightTotal);
 
-  const allPositives = [];
-  const allNegatives = [];
-  for (const b of breakdown) {
-    allPositives.push(...b.positives.map((t) => ({ text: t, goal: b.label })));
-    allNegatives.push(...b.negatives.map((t) => ({ text: t, goal: b.label })));
+  const ingredientAnalysis = analyzeIngredientPreferences(
+    product,
+    user.ingredientPreferences ?? {}
+  );
+
+  let overallScore = goalOnlyScore;
+  if (ingredientAnalysis.hasEnabledPrefs) {
+    const ingWeight = 6;
+    overallScore = Math.round(
+      (goalOnlyScore * weightTotal + ingredientAnalysis.subscore * ingWeight) /
+        (weightTotal + ingWeight)
+    );
   }
 
-  const topWins = breakdown
-    .filter((b) => b.subscore >= 65)
-    .sort((a, b) => b.subscore - a.subscore)
-    .slice(0, 3)
-    .flatMap((b) => b.positives.slice(0, 1).map((t) => ({ text: t, goal: b.label })));
+  const nutrientContributions = buildNutrientContributions(
+    product,
+    breakdown,
+    ingredientAnalysis,
+    goalsToScore
+  );
 
-  const topLosses = breakdown
-    .filter((b) => b.subscore < 55)
-    .sort((a, b) => a.subscore - b.subscore)
-    .slice(0, 3)
-    .flatMap((b) => b.negatives.slice(0, 1).map((t) => ({ text: t, goal: b.label })));
+  const positiveDrivers = [];
+  const negativeDrivers = [];
+  const ingredientDrivers = [];
+
+  for (const b of breakdown) {
+    for (const t of b.positives) {
+      positiveDrivers.push({ text: t, category: 'goal', source: b.label });
+    }
+    for (const t of b.negatives) {
+      negativeDrivers.push({
+        text: t.startsWith('Lost') ? t : `Lost points because ${t.charAt(0).toLowerCase()}${t.slice(1)}`,
+        category: 'goal',
+        source: b.label,
+      });
+    }
+  }
+
+  for (const d of ingredientAnalysis.drivers) {
+    const entry = { text: d.text, category: 'ingredient', preferenceKey: d.preferenceKey };
+    if (d.type === 'positive') {
+      positiveDrivers.push(entry);
+      ingredientDrivers.push({ ...entry, impact: 'positive' });
+    } else {
+      negativeDrivers.push(entry);
+      ingredientDrivers.push({ ...entry, impact: 'negative' });
+    }
+  }
+
+  const topWins = positiveDrivers.slice(0, 4);
+  const topLosses = negativeDrivers.slice(0, 4);
 
   return {
     overallScore: clamp(overallScore),
+    goalOnlyScore,
     breakdown,
-    whyScoredWell: topWins.length ? topWins : allPositives.slice(0, 4),
-    whyLostPoints: topLosses.length ? topLosses : allNegatives.slice(0, 4),
+    ingredientMatches: ingredientAnalysis.matches,
+    ingredientPreferenceScore: ingredientAnalysis.hasEnabledPrefs
+      ? ingredientAnalysis.subscore
+      : null,
+    nutrientContributions,
+    whyThisScore: {
+      positiveDrivers: topWins,
+      negativeDrivers: topLosses,
+      ingredientDrivers: ingredientDrivers.slice(0, 6),
+    },
+    whyScoredWell: topWins.filter((d) => d.category !== 'ingredient').slice(0, 3),
+    whyLostPoints: topLosses.slice(0, 4),
   };
 }

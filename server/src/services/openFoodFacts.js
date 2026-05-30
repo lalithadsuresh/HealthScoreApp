@@ -35,6 +35,7 @@ function normalizeProduct(raw) {
     },
     novaGroup: p.nova_group ?? null,
     additivesCount: additives.length,
+    additivesTags: additives,
     ingredientsText,
     nutriScore: p.nutriscore_grade ?? null,
   };

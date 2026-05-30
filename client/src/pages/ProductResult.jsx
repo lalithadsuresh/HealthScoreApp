@@ -4,6 +4,43 @@ import { api } from '../api/client.js';
 import AppLayout from '../components/AppLayout.jsx';
 import ScoreCircle, { scoreColor } from '../components/ScoreCircle.jsx';
 
+function DriverList({ title, items, variant }) {
+  if (!items?.length) {
+    return (
+      <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nothing notable in this category.</p>
+    );
+  }
+  return (
+    <>
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      {items.map((w, i) => (
+        <p key={i} style={{ margin: '0.35rem 0', lineHeight: 1.45 }}>
+          <span className={variant === 'good' ? 'tag tag-good' : 'tag tag-warn'}>
+            {variant === 'good' ? '+' : '−'}
+          </span>{' '}
+          {w.text}
+        </p>
+      ))}
+    </>
+  );
+}
+
+function ContributionRow({ item }) {
+  if (item.score == null) return null;
+  return (
+    <div style={{ marginBottom: '0.85rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+        <span>{item.label}</span>
+        <strong style={{ color: scoreColor(item.score) }}>{item.score}</strong>
+      </div>
+      <div className="progress-bar">
+        <div className="progress-bar-fill" style={{ width: `${item.score}%` }} />
+      </div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>{item.summary}</div>
+    </div>
+  );
+}
+
 export default function ProductResult() {
   const { barcode } = useParams();
   const [data, setData] = useState(null);
@@ -50,6 +87,8 @@ export default function ProductResult() {
 
   const { product, score, alternatives } = data;
   const n = product.nutriments ?? {};
+  const why = score.whyThisScore ?? {};
+  const contrib = score.nutrientContributions ?? {};
 
   return (
     <AppLayout showNav={false}>
@@ -69,14 +108,59 @@ export default function ProductResult() {
         {product.brand && (
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>{product.brand}</p>
         )}
-        <ScoreCircle score={score.overallScore} label="Your 3Bite score" />
+        <ScoreCircle score={score.overallScore} label="Your goal-based score" />
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
-          Personalized — not a universal health grade
+          Based on your nutrition goals and optional ingredient preferences
         </p>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Category breakdown</h3>
+        <h3 style={{ marginTop: 0 }}>Why this score?</h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+          Your number reflects nutrition macros from your goals plus any ingredient preferences you turned on.
+          This is preference-based support, not medical advice.
+        </p>
+      </div>
+
+      <div className="card">
+        <DriverList
+          title="Positive score drivers"
+          items={why.positiveDrivers}
+          variant="good"
+        />
+      </div>
+
+      <div className="card">
+        <DriverList
+          title="Negative score drivers"
+          items={why.negativeDrivers}
+          variant="warn"
+        />
+      </div>
+
+      {why.ingredientDrivers?.length > 0 && (
+        <div className="card">
+          <DriverList
+            title="Ingredient-based drivers"
+            items={why.ingredientDrivers}
+            variant="warn"
+          />
+        </div>
+      )}
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Score breakdown</h3>
+        <ContributionRow item={contrib.protein} />
+        <ContributionRow item={contrib.calories} />
+        <ContributionRow item={contrib.fiber} />
+        <ContributionRow item={contrib.sugar} />
+        <ContributionRow item={contrib.sodium} />
+        <ContributionRow item={contrib.saturatedFat} />
+        <ContributionRow item={contrib.ingredientQuality} />
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Goals breakdown</h3>
         {score.breakdown.map((b) => (
           <div key={b.goalKey} style={{ marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
@@ -93,33 +177,14 @@ export default function ProductResult() {
         ))}
       </div>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Why it scored well</h3>
-        {score.whyScoredWell?.length ? (
-          score.whyScoredWell.map((w, i) => (
-            <p key={i} style={{ margin: '0.35rem 0' }}>
-              <span className="tag tag-good">+</span> {w.text}
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}> ({w.goal})</span>
-            </p>
-          ))
-        ) : (
-          <p style={{ color: 'var(--text-muted)' }}>No strong wins for your current weights.</p>
-        )}
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Where it lost points</h3>
-        {score.whyLostPoints?.length ? (
-          score.whyLostPoints.map((w, i) => (
-            <p key={i} style={{ margin: '0.35rem 0' }}>
-              <span className="tag tag-warn">−</span> {w.text}
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}> ({w.goal})</span>
-            </p>
-          ))
-        ) : (
-          <p style={{ color: 'var(--text-muted)' }}>Nothing major flagged for your goals.</p>
-        )}
-      </div>
+      {product.ingredientsText && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Ingredients</h3>
+          <p style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+            {product.ingredientsText}
+          </p>
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Nutrition (per 100g)</h3>
@@ -130,7 +195,7 @@ export default function ProductResult() {
             ['Sugar', n.sugar, 'g'],
             ['Fiber', n.fiber, 'g'],
             ['Sodium', n.sodium, 'mg'],
-            ['Fat', n.fat, 'g'],
+            ['Sat. fat', n.saturatedFat, 'g'],
           ].map(([label, val, unit]) => (
             <div key={label}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{label}</div>
@@ -143,9 +208,6 @@ export default function ProductResult() {
       {alternatives?.length > 0 && (
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Alternatives to consider</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 0 }}>
-            Similar products with estimated scores for your profile
-          </p>
           {alternatives.map((alt) => (
             <Link
               key={alt.barcode}
@@ -162,12 +224,7 @@ export default function ProductResult() {
                 <strong style={{ fontSize: '0.9rem' }}>{alt.name}</strong>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{alt.brand}</div>
               </div>
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: scoreColor(alt.previewScore ?? 50),
-                }}
-              >
+              <span style={{ fontWeight: 700, color: scoreColor(alt.previewScore ?? 50) }}>
                 {alt.previewScore ?? '—'}
               </span>
             </Link>
