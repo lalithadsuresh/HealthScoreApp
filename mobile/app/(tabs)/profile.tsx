@@ -5,6 +5,12 @@ import { api } from '../../src/api/client';
 import { Button, Card, Disclaimer, ErrorBanner, Input, Subtitle, Title } from '../../src/components/ui';
 import { WeightStepper } from '../../src/components/WeightStepper';
 import { GOAL_KEYS, GOAL_META, MEDICAL_DISCLAIMER, type GoalKey } from '../../src/constants/goals';
+import {
+  INGREDIENT_PREF_KEYS,
+  INGREDIENT_PREF_META,
+  INGREDIENT_PREF_NOTE,
+  type IngredientPrefKey,
+} from '../../src/constants/ingredientPreferences';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 
@@ -20,6 +26,13 @@ export default function ProfileScreen() {
   });
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [ingredientPrefs, setIngredientPrefs] = useState<Record<string, boolean>>(() => {
+    const p = Object.fromEntries(INGREDIENT_PREF_KEYS.map((k) => [k, false]));
+    if (user?.ingredientPreferences) {
+      for (const k of INGREDIENT_PREF_KEYS) p[k] = Boolean(user.ingredientPreferences[k]);
+    }
+    return p;
+  });
   const [busy, setBusy] = useState(false);
 
   const toggle = (key: GoalKey) => {
@@ -95,6 +108,21 @@ export default function ProfileScreen() {
                 onChange={(v) => setWeights((w) => ({ ...w, [key]: v }))}
               />
             )}
+          </Card>
+        );
+      })}
+
+      <Text style={styles.section}>Ingredient preferences</Text>
+      <Disclaimer text={INGREDIENT_PREF_NOTE} />
+      {INGREDIENT_PREF_KEYS.map((key) => {
+        const meta = INGREDIENT_PREF_META[key];
+        const on = ingredientPrefs[key];
+        return (
+          <Card key={key}>
+            <Pressable onPress={() => setIngredientPrefs((p) => ({ ...p, [key]: !p[key] }))} style={styles.goalRow}>
+              <View style={[styles.check, on && styles.checkOn]} />
+              <Text style={styles.goalLabel}>{meta.label}</Text>
+            </Pressable>
           </Card>
         );
       })}

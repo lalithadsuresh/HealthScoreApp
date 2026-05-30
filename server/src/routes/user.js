@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { GOAL_KEYS } from '../constants/goals.js';
+import { INGREDIENT_PREF_KEYS } from '../constants/ingredientPreferences.js';
 import { authRequired, loadUser } from '../middleware/auth.js';
 
 const router = Router();
 
 router.patch('/profile', authRequired, loadUser, async (req, res) => {
   try {
-    const { name, goalWeights, selectedGoals, onboardingComplete } = req.body;
+    const { name, goalWeights, selectedGoals, onboardingComplete, ingredientPreferences } = req.body;
     const user = req.user;
 
     if (name?.trim()) user.name = name.trim();
@@ -22,6 +23,15 @@ router.patch('/profile', authRequired, loadUser, async (req, res) => {
         }
       }
       user.markModified('goalWeights');
+    }
+
+    if (ingredientPreferences) {
+      for (const key of INGREDIENT_PREF_KEYS) {
+        if (ingredientPreferences[key] != null) {
+          user.ingredientPreferences[key] = Boolean(ingredientPreferences[key]);
+        }
+      }
+      user.markModified('ingredientPreferences');
     }
 
     if (onboardingComplete != null) {

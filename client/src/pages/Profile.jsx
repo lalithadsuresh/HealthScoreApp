@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { GOAL_KEYS, GOAL_META } from '../constants/goals.js';
+import {
+  INGREDIENT_PREF_KEYS,
+  INGREDIENT_PREF_META,
+  INGREDIENT_PREF_NOTE,
+} from '../constants/ingredientPreferences.js';
 import AppLayout from '../components/AppLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -15,6 +20,13 @@ export default function Profile() {
     for (const k of GOAL_KEYS) w[k] = user?.goalWeights?.[k] ?? 0;
     return w;
   });
+  const [ingredientPrefs, setIngredientPrefs] = useState(() => {
+    const p = Object.fromEntries(INGREDIENT_PREF_KEYS.map((k) => [k, false]));
+    if (user?.ingredientPreferences) {
+      for (const k of INGREDIENT_PREF_KEYS) p[k] = Boolean(user.ingredientPreferences[k]);
+    }
+    return p;
+  });
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,6 +35,10 @@ export default function Profile() {
     setSelected((prev) =>
       prev.includes(key) ? prev.filter((g) => g !== key) : [...prev, key]
     );
+  };
+
+  const togglePref = (key) => {
+    setIngredientPrefs((p) => ({ ...p, [key]: !p[key] }));
   };
 
   const save = async () => {
@@ -38,6 +54,7 @@ export default function Profile() {
         name,
         selectedGoals: selected,
         goalWeights: activeWeights,
+        ingredientPreferences: ingredientPrefs,
       });
       updateUser(u);
       setMsg('Profile saved');
@@ -99,6 +116,24 @@ export default function Profile() {
               </div>
             )}
           </div>
+        );
+      })}
+
+      <h3>Ingredient preferences</h3>
+      <p className="page-sub" style={{ marginTop: 0 }}>
+        {INGREDIENT_PREF_NOTE}
+      </p>
+      {INGREDIENT_PREF_KEYS.map((key) => {
+        const meta = INGREDIENT_PREF_META[key];
+        const on = ingredientPrefs[key];
+        return (
+          <label key={key} className={`goal-chip ${on ? 'selected' : ''}`}>
+            <input type="checkbox" checked={on} onChange={() => togglePref(key)} />
+            <div>
+              <strong>{meta.label}</strong>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{meta.hint}</div>
+            </div>
+          </label>
         );
       })}
 

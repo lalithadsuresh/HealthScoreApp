@@ -77,7 +77,67 @@ export default function ProductResultScreen() {
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
           <ScoreCircle score={score.overallScore} label="Goal-based score" />
-          <Subtitle>Personalized for your nutrition priorities — not medical advice.</Subtitle>
+          
+        {score.whyThisScore && (
+          <>
+            <Card>
+              <Text style={styles.section}>Why this score?</Text>
+              <Text style={styles.muted}>
+                Based on your goals and any ingredient preferences you enabled.
+              </Text>
+            </Card>
+            <Card>
+              <Text style={styles.section}>Positive drivers</Text>
+              {(score.whyThisScore.positiveDrivers ?? []).length ? (
+                score.whyThisScore.positiveDrivers.map((d, i) => (
+                  <Text key={`p-${i}`} style={styles.driver}>+ {d.text}</Text>
+                ))
+              ) : (
+                <Text style={styles.muted}>No strong positive drivers.</Text>
+              )}
+            </Card>
+            <Card>
+              <Text style={styles.section}>Negative drivers</Text>
+              {(score.whyThisScore.negativeDrivers ?? []).map((d, i) => (
+                <Text key={`n-${i}`} style={styles.driver}>− {d.text}</Text>
+              ))}
+            </Card>
+            {(score.whyThisScore.ingredientDrivers ?? []).length > 0 && (
+              <Card>
+                <Text style={styles.section}>Ingredient-based drivers</Text>
+                {score.whyThisScore.ingredientDrivers.map((d, i) => (
+                  <Text key={`i-${i}`} style={styles.driver}>
+                    {d.impact === 'positive' ? '+' : '−'} {d.text}
+                  </Text>
+                ))}
+              </Card>
+            )}
+          </>
+        )}
+
+        {score.nutrientContributions && (
+          <Card>
+            <Text style={styles.section}>Score breakdown</Text>
+            {Object.values(score.nutrientContributions).map((item) =>
+              item?.score != null ? (
+                <View key={item.key} style={styles.breakRow}>
+                  <View style={styles.breakHead}>
+                    <Text style={styles.breakLabel}>{item.label}</Text>
+                    <Text style={[styles.breakScore, { color: scoreColor(item.score) }]}>
+                      {item.score}
+                    </Text>
+                  </View>
+                  <View style={styles.bar}>
+                    <View style={[styles.barFill, { width: `${item.score}%` }]} />
+                  </View>
+                  <Text style={styles.weight}>{item.summary}</Text>
+                </View>
+              ) : null
+            )}
+          </Card>
+        )}
+
+        <Subtitle>Personalized for your nutrition priorities — not medical advice.</Subtitle>
         </Card>
 
         <Card>
@@ -202,4 +262,6 @@ const styles = StyleSheet.create({
   },
   altName: { flex: 1, paddingRight: 8 },
   altScore: { fontWeight: '700', fontSize: 18 },
+  driver: { marginBottom: 8, lineHeight: 20 },
 });
+

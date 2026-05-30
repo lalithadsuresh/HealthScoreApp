@@ -2,12 +2,15 @@ import type { GoalKey } from '../constants/goals';
 
 export type GoalWeights = Record<GoalKey, number>;
 
+export type IngredientPreferences = Record<string, boolean>;
+
 export interface User {
   id: string;
   name: string;
   email: string;
   goalWeights: GoalWeights;
   selectedGoals: GoalKey[];
+  ingredientPreferences?: IngredientPreferences;
   onboardingComplete: boolean;
   createdAt?: string;
 }
@@ -33,6 +36,7 @@ export interface Product {
   novaGroup?: number | null;
   additivesCount?: number;
   ingredientsText?: string;
+  additivesTags?: string[];
   nutriScore?: string | null;
 }
 
@@ -45,11 +49,42 @@ export interface ScoreBreakdownItem {
   negatives: string[];
 }
 
+export interface ScoreDriver {
+  text: string;
+  category?: string;
+  source?: string;
+  preferenceKey?: string;
+  impact?: string;
+}
+
+export interface NutrientContribution {
+  key: string;
+  label: string;
+  score: number | null;
+  impact: 'positive' | 'negative' | 'neutral';
+  summary: string;
+  detail?: string;
+}
+
 export interface ProductScore {
   overallScore: number;
   breakdown: ScoreBreakdownItem[];
   whyScoredWell: { text: string; goal: string }[];
   whyLostPoints: { text: string; goal: string }[];
+  whyThisScore?: {
+    positiveDrivers: ScoreDriver[];
+    negativeDrivers: ScoreDriver[];
+    ingredientDrivers: ScoreDriver[];
+  };
+  nutrientContributions?: Record<string, NutrientContribution>;
+  ingredientMatches?: {
+    preferenceKey: string;
+    label: string;
+    detected: string[];
+    matched: boolean;
+    positive?: boolean;
+  }[];
+  ingredientPreferenceScore?: number | null;
 }
 
 export interface SearchResult {

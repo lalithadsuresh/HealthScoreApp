@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { GOAL_KEYS, GOAL_META } from '../constants/goals.js';
+import {
+  INGREDIENT_PREF_KEYS,
+  INGREDIENT_PREF_META,
+  INGREDIENT_PREF_NOTE,
+} from '../constants/ingredientPreferences.js';
 import { useAuth } from '../context/AuthContext.jsx';
+
+const defaultPrefs = () => Object.fromEntries(INGREDIENT_PREF_KEYS.map((k) => [k, false]));
 
 export default function Onboarding() {
   const { user, updateUser } = useAuth();
@@ -14,6 +21,13 @@ export default function Onboarding() {
     for (const k of GOAL_KEYS) w[k] = user?.goalWeights?.[k] ?? 5;
     return w;
   });
+  const [ingredientPrefs, setIngredientPrefs] = useState(() => {
+    const p = defaultPrefs();
+    if (user?.ingredientPreferences) {
+      for (const k of INGREDIENT_PREF_KEYS) p[k] = Boolean(user.ingredientPreferences[k]);
+    }
+    return p;
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -23,11 +37,11 @@ export default function Onboarding() {
     );
   };
 
+  const togglePref = (key) => {
+    setIngredientPrefs((p) => ({ ...p, [key]: !p[key] }));
+  };
+
   const finish = async () => {
-    if (selected.length === 0) {
-      setError('Select at least one nutrition goal');
-      return;
-    }
     setBusy(true);
     setError('');
     try {
@@ -38,6 +52,7 @@ export default function Onboarding() {
       const { user: u } = await api.updateProfile({
         selectedGoals: selected,
         goalWeights: activeWeights,
+        ingredientPreferences: ingredientPrefs,
         onboardingComplete: true,
       });
       updateUser(u);
@@ -53,9 +68,9 @@ export default function Onboarding() {
     <div className="app-shell">
       <div className="page">
         <p className="page-sub" style={{ marginBottom: '0.5rem' }}>
-          Step {step} of 2
+          Step {step} of 3
         </p>
-        {step === 1 ? (
+        {step === 1 && (
           <>
             <h1 className="page-title">What matters to you?</h1>
             <p className="page-sub">Choose your nutrition priorities. You can change these anytime.</p>
@@ -64,15 +79,8 @@ export default function Onboarding() {
               const meta = GOAL_META[key];
               const isOn = selected.includes(key);
               return (
-                <label
-                  key={key}
-                  className={`goal-chip ${isOn ? 'selected' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isOn}
-                    onChange={() => toggleGoal(key)}
-                  />
+                <label key={key} className={`goal-chip ${isOn ? 'selected' : ''}`}>
+                  <input type="checkbox" checked={isOn} onChange={() => toggleGoal(key)} />
                   <div>
                     <strong>
                       {meta.emoji} {meta.label}
@@ -97,7 +105,8 @@ export default function Onboarding() {
               Next: set importance
             </button>
           </>
-        ) : (
+        )}
+        {step === 2 && (
           <>
             <h1 className="page-title">How important is each?</h1>
             <p className="page-sub">Slide from 0 (ignore) to 10 (essential) for your personalized score.</p>
@@ -115,13 +124,40 @@ export default function Onboarding() {
                   min={0}
                   max={10}
                   value={weights[key]}
-                  onChange={(e) =>
-                    setWeights((w) => ({ ...w, [key]: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setWeights((w) => ({ ...w, [key]: Number(e.target.value) }))}
                 />
               </div>
             ))}
             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
+              Back
+            </button>
+            <button type="button" className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={() => setStep(3)}>
+              Next: ingredient preferences
+            </button>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <h1 className="page-title">Ingredient preferences</h1>
+            <p className="page-sub">Optional — only affects your score when toggled on.</p>
+            <div className="card" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>{INGREDIENT_PREF_NOTE}</p>
+            </div>
+            {error && <div className="alert alert-error">{error}</div>}
+            {INGREDIENT_PREF_KEYS.map((key) => {
+              const meta = INGREDIENT_PREF_META[key];
+              const on = ingredientPrefs[key];
+              return (
+                <label key={key} className={`goal-chip ${on ? 'selected' : ''}`}>
+                  <input type="checkbox" checked={on} onChange={() => togglePref(key)} />
+                  <div>
+                    <strong>{meta.label}</strong>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{meta.hint}</div>
+                  </div>
+                </label>
+              );
+            })}
+            <button type="button" className="btn btn-secondary" onClick={() => setStep(2)}>
               Back
             </button>
             <button
