@@ -29,10 +29,13 @@ export default function AllergiesScreen() {
       for (const k of INGREDIENT_PREF_KEYS) {
         ingredientPreferences[k] = params[k] === '1';
       }
+      const goalFocuses = String(params.goalFocuses ?? params.goalFocus ?? '')
+        .split(',')
+        .filter(Boolean);
       const { user } = await api.updateProfile({
         primaryGoal: String(params.primaryGoal),
-        goalFocus: String(params.goalFocus),
-        goalFocusOther: String(params.goalFocusOther ?? ''),
+        goalFocuses,
+        goalFocus: goalFocuses[0] ?? null,
         personalPriorities: priorities,
         ingredientPreferences,
         allergiesRestrictions: selected,

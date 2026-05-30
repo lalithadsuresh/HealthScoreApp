@@ -65,8 +65,9 @@ export const api = {
     selectedGoals: string[];
     ingredientPreferences: Record<string, boolean>;
     primaryGoal: string;
-    goalFocus: string;
-    goalFocusOther: string;
+    goalFocus?: string | null;
+    goalFocuses?: string[];
+    goalFocusOther?: string;
     personalPriorities: string[];
     allergiesRestrictions: string[];
     onboardingComplete: boolean;

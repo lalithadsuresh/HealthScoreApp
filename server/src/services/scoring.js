@@ -2,6 +2,7 @@ import { GOAL_KEYS, GOAL_LABELS } from '../constants/goals.js';
 import { analyzeIngredientPreferences } from './ingredientScoring.js';
 import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
 import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
+import { buildVisualDrivers, buildScoreSummary } from './focusDrivers.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -363,6 +364,14 @@ export function scoreProduct(product, user) {
     }
   }
 
+  const visualDrivers = buildVisualDrivers(
+    product,
+    user,
+    ingredientAnalysis,
+    allergyAnalysis
+  );
+  const scoreSummary = buildScoreSummary(user, clamp(overallScore));
+
   const topWins = positiveDrivers.slice(0, 4);
   const topLosses = negativeDrivers.slice(0, 4);
 
@@ -383,7 +392,9 @@ export function scoreProduct(product, user) {
     whyScoredWell: topWins.filter((d) => d.category !== 'ingredient').slice(0, 3),
     whyLostPoints: topLosses.slice(0, 4),
     goalDisplayName,
-    scoreHeadline: `${clamp(overallScore)}/100 for your ${goalDisplayName} goal`,
+    scoreHeadline: `${scoreSummary.score}/100 for your ${scoreSummary.primaryGoalLabel} goal`,
+    scoreSummary,
+    visualDrivers,
     compatibility: {
       conflicts: allergyAnalysis.conflicts,
       warnings: allergyAnalysis.warnings,

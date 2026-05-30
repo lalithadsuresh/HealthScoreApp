@@ -3,6 +3,7 @@ import {
   GOAL_FOCUS_OPTIONS,
   PRIMARY_GOAL_LABELS,
 } from '../constants/onboarding.js';
+import { getUserFocusIds, getFocusLabelsForUser } from './focusDrivers.js';
 
 const PRIORITY_TO_GOALS = {
   protein: { highProtein: 10, buildMuscle: 6 },
@@ -66,20 +67,10 @@ function mergeWeights(target, source, scale = 1) {
 }
 
 export function getGoalDisplayName(user) {
-  const primary = user.primaryGoal;
-  const focus = user.goalFocus;
-  if (!primary) return 'your goals';
-
-  const options = GOAL_FOCUS_OPTIONS[primary] ?? [];
-  const focusMeta = options.find((o) => o.id === focus);
-  const focusLabel = focus === 'other' && user.goalFocusOther?.trim()
-    ? user.goalFocusOther.trim()
-    : focusMeta?.label;
-
-  const primaryLabel = PRIMARY_GOAL_LABELS[primary] ?? primary;
-  if (focusLabel && focus !== 'other') return `${focusLabel} ${primaryLabel}`;
-  if (focusLabel) return focusLabel;
-  return primaryLabel;
+  const labels = getFocusLabelsForUser(user);
+  const primary = PRIMARY_GOAL_LABELS[user.primaryGoal];
+  if (labels.length) return labels.join(' · ');
+  return primary ?? 'your nutrition';
 }
 
 export function deriveScoringProfile(user) {
@@ -89,15 +80,15 @@ export function deriveScoringProfile(user) {
     mergeWeights(weights, PRIMARY_BASE[user.primaryGoal], 1);
   }
 
-  if (user.goalFocus && FOCUS_BOOSTS[user.goalFocus]) {
-    mergeWeights(weights, FOCUS_BOOSTS[user.goalFocus], 1);
+  for (const focusId of getUserFocusIds(user)) {
+    if (FOCUS_BOOSTS[focusId]) mergeWeights(weights, FOCUS_BOOSTS[focusId], 1);
   }
 
   for (const p of user.personalPriorities ?? []) {
     if (PRIORITY_TO_GOALS[p]) mergeWeights(weights, PRIORITY_TO_GOALS[p], 0.85);
   }
 
-  if (user.ingredientPreferences?.preferMinimalIngredients || user.goalFocus === 'cleanEating') {
+  if (user.ingredientPreferences?.preferMinimalIngredients || getUserFocusIds(user).includes('cleanEating')) {
     weights.cleanIngredients = Math.min(10, (weights.cleanIngredients ?? 0) + 4);
   }
 
