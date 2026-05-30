@@ -15,6 +15,7 @@ router.patch('/profile', authRequired, loadUser, async (req, res) => {
       ingredientPreferences,
       primaryGoal,
       goalFocus,
+      goalFocuses,
       goalFocusOther,
       personalPriorities,
       allergiesRestrictions,
@@ -46,7 +47,13 @@ router.patch('/profile', authRequired, loadUser, async (req, res) => {
     }
 
     if (primaryGoal != null) user.primaryGoal = primaryGoal;
-    if (goalFocus != null) user.goalFocus = goalFocus;
+    if (goalFocuses != null) {
+      user.goalFocuses = Array.isArray(goalFocuses) ? goalFocuses.filter(Boolean) : [];
+      user.goalFocus = user.goalFocuses[0] ?? null;
+    } else if (goalFocus != null) {
+      user.goalFocus = goalFocus;
+      user.goalFocuses = [goalFocus];
+    }
     if (goalFocusOther != null) user.goalFocusOther = String(goalFocusOther).slice(0, 120);
     if (personalPriorities) user.personalPriorities = personalPriorities;
     if (allergiesRestrictions) user.allergiesRestrictions = allergiesRestrictions;

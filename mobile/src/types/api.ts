@@ -12,6 +12,7 @@ export interface User {
   selectedGoals: GoalKey[];
   primaryGoal?: string | null;
   goalFocus?: string | null;
+  goalFocuses?: string[];
   goalFocusOther?: string;
   personalPriorities?: string[];
   allergiesRestrictions?: string[];
@@ -71,6 +72,27 @@ export interface NutrientContribution {
   detail?: string;
 }
 
+
+export interface VisualDriver {
+  icon: string;
+  label: string;
+  impact: number;
+  direction: 'positive' | 'negative';
+}
+
+export interface ScoreSummary {
+  score: number;
+  primaryGoalLabel: string;
+  focusLabels: string[];
+  focusLine: string;
+  primaryGoal?: string;
+}
+
+export interface VisualDrivers {
+  positive: VisualDriver[];
+  negative: VisualDriver[];
+}
+
 export interface ProductScore {
   overallScore: number;
   breakdown: ScoreBreakdownItem[];
@@ -92,6 +114,8 @@ export interface ProductScore {
   ingredientPreferenceScore?: number | null;
   goalDisplayName?: string;
   scoreHeadline?: string;
+  scoreSummary?: ScoreSummary;
+  visualDrivers?: VisualDrivers;
   compatibility?: {
     conflicts: { message: string; label: string; detected?: string }[];
     warnings: string[];

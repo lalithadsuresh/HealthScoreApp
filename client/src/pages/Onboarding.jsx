@@ -61,8 +61,14 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
 
   const [primaryGoal, setPrimaryGoal] = useState(user?.primaryGoal ?? '');
-  const [goalFocus, setGoalFocus] = useState(user?.goalFocus ?? '');
-  const [goalFocusOther, setGoalFocusOther] = useState(user?.goalFocusOther ?? '');
+  const [goalFocuses, setGoalFocuses] = useState(() =>
+    user?.goalFocuses?.length
+      ? [...user.goalFocuses]
+      : user?.goalFocus
+        ? [user.goalFocus]
+        : []
+  );
+  
   const [priorities, setPriorities] = useState(user?.personalPriorities ?? []);
   const [ingredientPrefs, setIngredientPrefs] = useState(() =>
     Object.fromEntries(
@@ -98,14 +104,22 @@ export default function Onboarding() {
     });
   };
 
+  const toggleFocus = (id) => {
+    setGoalFocuses((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 4) return prev;
+      return [...prev, id];
+    });
+  };
+
   const finish = async () => {
     setBusy(true);
     setError('');
     try {
       const { user: u } = await api.updateProfile({
         primaryGoal,
-        goalFocus,
-        goalFocusOther: goalFocus === 'other' ? goalFocusOther : '',
+        goalFocuses,
+        goalFocus: goalFocuses[0] ?? null,
         personalPriorities: priorities,
         ingredientPreferences: ingredientPrefs,
         allergiesRestrictions: restrictions,
@@ -151,7 +165,7 @@ export default function Onboarding() {
               selected={primaryGoal}
               onSelect={(id) => {
                 setPrimaryGoal(id);
-                setGoalFocus('');
+                setGoalFocuses([]);
               }}
             />
             <button
@@ -171,28 +185,24 @@ export default function Onboarding() {
         {step === 2 && (
           <>
             <h1 className="page-title">Let&apos;s personalize your {PRIMARY_GOAL_LABELS[primaryGoal]} plan</h1>
-            <p className="page-sub">What matters most within this goal?</p>
+            <p className="page-sub">Select all that apply (up to 4). These shape your score breakdown.</p>
             {error && <div className="alert alert-error">{error}</div>}
             <ChoiceList
-              options={focusOptions}
-              selected={goalFocus}
-              onSelect={setGoalFocus}
+              options={focusOptions.filter((o) => o.id !== 'other')}
+              selected={goalFocuses}
+              multi
+              onSelect={toggleFocus}
             />
-            {goalFocus === 'other' && (
-              <input
-                className="input"
-                placeholder="Tell us in a few words (optional)"
-                value={goalFocusOther}
-                onChange={(e) => setGoalFocusOther(e.target.value)}
-              />
-            )}
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Selected: {goalFocuses.length}/4
+            </p>
             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
               Back
             </button>
             <button
               type="button"
               className="btn btn-primary"
-              disabled={!goalFocus}
+              disabled={goalFocuses.length === 0}
               onClick={() => setStep(3)}
             >
               Continue
@@ -298,8 +308,8 @@ export default function Onboarding() {
               We&apos;ll score products for your{' '}
               <strong>
                 {PRIMARY_GOAL_LABELS[primaryGoal]}
-                {goalFocus && goalFocus !== 'other'
-                  ? ` · ${focusOptions.find((f) => f.id === goalFocus)?.label}`
+                {goalFocuses.length
+                  ? ` · ${goalFocuses.map((id) => focusOptions.find((f) => f.id === id)?.label).filter(Boolean).join(', ')}`
                   : ''}
               </strong>{' '}
               journey.

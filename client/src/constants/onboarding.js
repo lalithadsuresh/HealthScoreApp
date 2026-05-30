@@ -20,25 +20,25 @@ export const PRIMARY_GOAL_LABELS = {
 
 export const GOAL_FOCUS_OPTIONS = {
   bulk: [
-    { id: 'leanBulk', label: 'Lean bulk', description: 'Prioritize protein with moderate calories' },
-    { id: 'maxCalories', label: 'Maximize calories', description: 'Higher calorie density helps your score' },
-    { id: 'maxProtein', label: 'Maximize protein', description: 'Protein density matters most' },
-    { id: 'cleanEating', label: 'Clean eating', description: 'Ingredient quality while bulking' },
+    { id: 'leanBulk', label: 'Lean Bulk', description: 'Prioritize protein with moderate calories' },
+    { id: 'maxCalories', label: 'Maximize Calories', description: 'Higher calorie density helps your score' },
+    { id: 'maxProtein', label: 'Maximize Protein', description: 'Protein density matters most' },
+    { id: 'cleanEating', label: 'Clean Eating', description: 'Ingredient quality while bulking' },
     { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
   ],
   cut: [
-    { id: 'fatLoss', label: 'Fat loss', description: 'Lower calories and supportive macros' },
+    { id: 'fatLoss', label: 'Fat Loss', description: 'Lower Calories and supportive macros' },
     { id: 'fullness', label: 'Fullness', description: 'Fiber and volume-friendly choices' },
-    { id: 'preserveMuscle', label: 'Preserve muscle', description: 'Keep protein high while cutting' },
-    { id: 'lowerCalories', label: 'Lower calories', description: 'Calorie density is the main lever' },
-    { id: 'cleanEating', label: 'Clean eating', description: 'Ingredient quality while cutting' },
+    { id: 'preserveMuscle', label: 'Preserve Muscle', description: 'Keep protein high while cutting' },
+    { id: 'lowerCalories', label: 'Lower Calories', description: 'Calorie density is the main lever' },
+    { id: 'cleanEating', label: 'Clean Eating', description: 'Ingredient quality while cutting' },
     { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
   ],
   maintain: [
     { id: 'balancedEnergy', label: 'Balanced energy', description: 'Steady calories and macros' },
     { id: 'bodyComposition', label: 'Body composition', description: 'Balance protein, calories, and sugar' },
     { id: 'ingredientQuality', label: 'Ingredient quality', description: 'Cleaner labels day to day' },
-    { id: 'cleanEating', label: 'Clean eating', description: 'Whole-food leaning maintenance' },
+    { id: 'cleanEating', label: 'Clean Eating', description: 'Whole-food leaning maintenance' },
     { id: 'flexibleMaintenance', label: 'Flexible maintenance', description: 'Room for variety, still goal-aware' },
     { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
   ],
@@ -68,7 +68,7 @@ export const GOAL_FOCUS_OPTIONS = {
     { id: 'balancedMeals', label: 'Balanced meals', description: 'Mix of macros without extremes' },
     { id: 'ingredientQuality', label: 'Ingredient quality', description: 'Cleaner ingredient lists' },
     { id: 'avoidCrashes', label: 'Avoid energy crashes', description: 'Sugar and carb awareness' },
-    { id: 'cleanEating', label: 'Clean eating', description: 'Whole-food leaning wellness' },
+    { id: 'cleanEating', label: 'Clean Eating', description: 'Whole-food leaning wellness' },
     { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
   ],
 };
@@ -97,7 +97,7 @@ export const PERSONAL_PRIORITY_LABELS = {
   lowerSodium: 'Lower sodium',
   lowerSaturatedFat: 'Lower saturated fat',
   higherCalories: 'Higher calories',
-  lowerCalories: 'Lower calories',
+  lowerCalories: 'Lower Calories',
   recoveryFuel: 'Recovery fuel',
 };
 

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { api } from '../../src/api/client';
 import { ScoreCircle } from '../../src/components/ScoreCircle';
-import { Button, Card, ErrorBanner, LoadingCenter, Subtitle } from '../../src/components/ui';
+import { DriverChips, ScoreSummaryCard } from '../../src/components/ScoreBreakdown';
+import { Button, Card, ErrorBanner, LoadingCenter } from '../../src/components/ui';
 import type { Product, ProductScore, SearchResult } from '../../src/types/api';
 import { colors, scoreColor } from '../../src/theme';
 
@@ -65,6 +66,8 @@ export default function ProductResultScreen() {
   }
 
   const n = product.nutriments;
+  const summary = score.scoreSummary;
+  const drivers = score.visualDrivers ?? { positive: [], negative: [] };
 
   return (
     <>
@@ -76,116 +79,31 @@ export default function ProductResultScreen() {
           ) : null}
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
-          <Text style={{ fontSize: 17, fontWeight: '700', textAlign: 'center', color: colors.primaryDark, marginBottom: 8 }}>
-            {score.scoreHeadline ?? `${score.overallScore}/100 for your goals`}
-          </Text>
           <ScoreCircle score={score.overallScore} label="Your score" />
-          
-        {score.whyThisScore && (
-          <>
-            <Card>
-              <Text style={styles.section}>Why this score?</Text>
-              <Text style={styles.muted}>
-                Based on your goals and any ingredient preferences you enabled.
-              </Text>
-            </Card>
-            <Card>
-              <Text style={styles.section}>Positive drivers</Text>
-              {(score.whyThisScore.positiveDrivers ?? []).length ? (
-                score.whyThisScore.positiveDrivers.map((d, i) => (
-                  <Text key={`p-${i}`} style={styles.driver}>+ {d.text}</Text>
-                ))
-              ) : (
-                <Text style={styles.muted}>No strong positive drivers.</Text>
-              )}
-            </Card>
-            <Card>
-              <Text style={styles.section}>Negative drivers</Text>
-              {(score.whyThisScore.negativeDrivers ?? []).map((d, i) => (
-                <Text key={`n-${i}`} style={styles.driver}>− {d.text}</Text>
-              ))}
-            </Card>
-            {(score.whyThisScore.ingredientDrivers ?? []).length > 0 && (
-              <Card>
-                <Text style={styles.section}>Ingredient-based drivers</Text>
-                {score.whyThisScore.ingredientDrivers.map((d, i) => (
-                  <Text key={`i-${i}`} style={styles.driver}>
-                    {d.impact === 'positive' ? '+' : '−'} {d.text}
-                  </Text>
-                ))}
-              </Card>
-            )}
-          </>
-        )}
+        </Card>
 
-        {score.nutrientContributions && (
-          <Card>
-            <Text style={styles.section}>Score breakdown</Text>
-            {Object.values(score.nutrientContributions).map((item) =>
-              item?.score != null ? (
-                <View key={item.key} style={styles.breakRow}>
-                  <View style={styles.breakHead}>
-                    <Text style={styles.breakLabel}>{item.label}</Text>
-                    <Text style={[styles.breakScore, { color: scoreColor(item.score) }]}>
-                      {item.score}
-                    </Text>
-                  </View>
-                  <View style={styles.bar}>
-                    <View style={[styles.barFill, { width: `${item.score}%` }]} />
-                  </View>
-                  <Text style={styles.weight}>{item.summary}</Text>
-                </View>
-              ) : null
-            )}
+        <ScoreSummaryCard summary={summary} score={score.overallScore} />
+
+        <DriverChips title="Positive Drivers" drivers={drivers.positive} variant="positive" />
+        <DriverChips title="Negative Drivers" drivers={drivers.negative} variant="negative" />
+
+        {score.compatibility?.conflicts?.length ? (
+          <Card style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
+            <Text style={styles.section}>Compatibility</Text>
+            {score.compatibility.conflicts.map((c, i) => (
+              <Text key={i} style={styles.bullet}>
+                ⚠ {c.message}
+              </Text>
+            ))}
           </Card>
-        )}
+        ) : null}
 
-        <Subtitle>Personalized for your nutrition priorities — not medical advice.</Subtitle>
-        </Card>
-
-        <Card>
-          <Text style={styles.section}>Category breakdown</Text>
-          {score.breakdown.map((b) => (
-            <View key={b.goalKey} style={styles.breakRow}>
-              <View style={styles.breakHead}>
-                <Text style={styles.breakLabel}>{b.label}</Text>
-                <Text style={[styles.breakScore, { color: scoreColor(b.subscore) }]}>
-                  {b.subscore}
-                </Text>
-              </View>
-              <View style={styles.bar}>
-                <View style={[styles.barFill, { width: `${b.subscore}%` }]} />
-              </View>
-              <Text style={styles.weight}>Weight: {b.weight}/10</Text>
-            </View>
-          ))}
-        </Card>
-
-        <Card>
-          <Text style={styles.section}>Why it scored well</Text>
-          {score.whyScoredWell?.length ? (
-            score.whyScoredWell.map((w, i) => (
-              <Text key={i} style={styles.bullet}>
-                ✓ {w.text} ({w.goal})
-              </Text>
-            ))
-          ) : (
-            <Text style={styles.muted}>No strong wins for your current weights.</Text>
-          )}
-        </Card>
-
-        <Card>
-          <Text style={styles.section}>Where it lost points</Text>
-          {score.whyLostPoints?.length ? (
-            score.whyLostPoints.map((w, i) => (
-              <Text key={i} style={styles.bullet}>
-                − {w.text} ({w.goal})
-              </Text>
-            ))
-          ) : (
-            <Text style={styles.muted}>Nothing major flagged for your goals.</Text>
-          )}
-        </Card>
+        {product.ingredientsText ? (
+          <Card>
+            <Text style={styles.section}>Ingredients</Text>
+            <Text style={styles.muted}>{product.ingredientsText}</Text>
+          </Card>
+        ) : null}
 
         <Card>
           <Text style={styles.section}>Nutrition (per 100g)</Text>
@@ -196,7 +114,6 @@ export default function ProductResultScreen() {
               ['Sugar', n.sugar, 'g'],
               ['Fiber', n.fiber, 'g'],
               ['Sodium', n.sodium, 'mg'],
-              ['Fat', n.fat, 'g'],
             ].map(([label, val, unit]) => (
               <View key={String(label)} style={styles.gridItem}>
                 <Text style={styles.gridLabel}>{label}</Text>
@@ -241,17 +158,10 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   heroImg: { width: 120, height: 120, marginBottom: 8 },
   productName: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  brand: { color: colors.muted, marginBottom: 8 },
+  brand: { color: colors.muted, marginBottom: 8, textAlign: 'center' },
   section: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
-  breakRow: { marginBottom: 14 },
-  breakHead: { flexDirection: 'row', justifyContent: 'space-between' },
-  breakLabel: { fontSize: 15 },
-  breakScore: { fontWeight: '700', fontSize: 16 },
-  bar: { height: 8, backgroundColor: colors.border, borderRadius: 4, marginTop: 6, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: colors.primary },
-  weight: { fontSize: 12, color: colors.muted, marginTop: 4 },
-  bullet: { marginBottom: 8, lineHeight: 20 },
-  muted: { color: colors.muted },
+  bullet: { marginBottom: 8, lineHeight: 20, fontSize: 14 },
+  muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   gridItem: { width: '50%', marginBottom: 12 },
   gridLabel: { fontSize: 12, color: colors.muted },
@@ -265,6 +175,4 @@ const styles = StyleSheet.create({
   },
   altName: { flex: 1, paddingRight: 8 },
   altScore: { fontWeight: '700', fontSize: 18 },
-  driver: { marginBottom: 8, lineHeight: 20 },
 });
-
