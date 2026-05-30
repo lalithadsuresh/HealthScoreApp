@@ -35,7 +35,7 @@ app.use((err, _req, res, _next) => {
 async function start() {
   await mongoose.connect(MONGODB_URI);
   console.log('MongoDB connected');
-  app.listen(PORT, () => console.log(`3Bite API listening on :${PORT}`));
+  app.listen(PORT, '0.0.0.0', () => console.log(`3Bite API listening on :${PORT}`));
 }
 
 start().catch((err) => {

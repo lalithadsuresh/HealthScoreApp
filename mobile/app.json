@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "3Bite",
+    "slug": "3bite",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "3bite",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.healthscoreapp.3bite",
+      "infoPlist": {
+        "NSCameraUsageDescription": "3Bite uses the camera to scan product barcodes. We look up nutrition data and show a goal-based score — not medical advice."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0d9488"
+      },
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow 3Bite to access your camera to scan product barcodes for nutrition lookup."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

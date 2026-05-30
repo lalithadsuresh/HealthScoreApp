@@ -14,7 +14,7 @@
 ### Prerequisites
 
 - Node.js 20+
-- Docker (for MongoDB) or a local MongoDB instance
+- **MongoDB** — Docker, [Homebrew](https://brew.sh), or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 
 ### 1. Install dependencies
 
@@ -24,8 +24,38 @@ npm run install:all
 
 ### 2. Start MongoDB
 
+You need a MongoDB server reachable at `mongodb://127.0.0.1:27017` (default in `server/.env.example`), or set `MONGODB_URI` in `server/.env`.
+
+#### Option A — Docker Compose
+
+1. **Start Docker Desktop** on your Mac (menu bar whale icon → wait until “Docker Desktop is running”).
+2. Run:
+
 ```bash
 docker compose up -d
+```
+
+**Error:** `Cannot connect to the Docker daemon at unix:///Users/.../docker.sock`  
+→ Docker Desktop is **not running**. Open the app, wait until it’s ready, then retry.
+
+#### Option B — Homebrew (no Docker)
+
+```bash
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+brew services start mongodb-community@7.0
+mongosh --eval "db.runCommand({ ping: 1 })"
+```
+
+You should see `{ ok: 1 }`.
+
+#### Option C — MongoDB Atlas (cloud)
+
+1. Create a free cluster at https://www.mongodb.com/cloud/atlas  
+2. Put the connection string in `server/.env`:
+
+```env
+MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/3bite?retryWrites=true&w=majority
 ```
 
 ### 3. Configure API
@@ -63,3 +93,14 @@ npm run dev
 ## Scoring
 
 Each of your active goals contributes a subscore (0–100) based on per-100g nutrition and ingredient signals. Your slider weights (0–10) produce a weighted overall score — two users can see different scores for the same product.
+
+
+## iOS app (Expo)
+
+See **[mobile/README.md](./mobile/README.md)** for running 3Bite on iPhone with Expo Go.
+
+```bash
+npm run dev:server          # API on :3001
+cd mobile && cp .env.example .env   # set EXPO_PUBLIC_API_URL to your Mac IP
+npm run dev:mobile          # or: cd mobile && npx expo start
+```

@@ -36,4 +36,14 @@ router.patch('/profile', authRequired, loadUser, async (req, res) => {
   }
 });
 
+router.delete('/account', authRequired, loadUser, async (req, res) => {
+  try {
+    await req.user.deleteOne();
+    res.json({ ok: true, message: 'Account deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
 export default router;
