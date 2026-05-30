@@ -3,11 +3,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { api } from '../../src/api/client';
 import { Button, Subtitle, Title } from '../../src/components/ui';
-import {
-  ALLERGY_RESTRICTION_KEYS,
-  ALLERGY_RESTRICTION_LABELS,
-  INGREDIENT_PREF_KEYS,
-} from '../../src/constants/onboarding';
+import { ALLERGY_RESTRICTION_KEYS, ALLERGY_RESTRICTION_LABELS } from '../../src/constants/onboarding';
+import { INGREDIENT_PREF_KEYS } from '../../src/constants/ingredientPreferences';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 
