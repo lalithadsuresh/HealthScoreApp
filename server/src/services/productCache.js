@@ -1,9 +1,10 @@
 import { Product } from '../models/Product.js';
 import { sortByUsEnglishPriority } from './productConfidence.js';
+import { migrateProductNutrients } from './nutrients.js';
 
 export async function getCachedProductByBarcode(barcode) {
   const doc = await Product.findOne({ barcode: String(barcode) });
-  return doc ? doc.toProductJSON() : null;
+  return doc ? migrateProductNutrients(doc.toProductJSON()) : null;
 }
 
 export async function saveProductToCache(product) {

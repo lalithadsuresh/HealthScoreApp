@@ -4,6 +4,7 @@ import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
 import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
 import { buildVisualDrivers, buildScoreSummary } from './focusDrivers.js';
 import { CONFIDENCE_MESSAGES, canConfidentlyScore } from './productConfidence.js';
+import { resolveForScoring, thresholds, formatNutrientValue } from './nutrients.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -39,30 +40,32 @@ function scoreCleanIngredients(product) {
 
 function computeGoalSubscore(goalKey, product) {
   const n = product.nutriments ?? {};
+  const t = thresholds(product);
+  const unknown = (v) => v == null;
 
   switch (goalKey) {
     case 'buildMuscle':
     case 'highProtein':
-      return scoreHigher(n.protein, 20, 3);
+      return unknown(n.protein) ? 50 : scoreHigher(n.protein, t.protein.good, t.protein.poor);
     case 'loseWeight':
-      return scoreLower(n.energyKcal, 150, 450);
+      return unknown(n.energyKcal) ? 50 : scoreLower(n.energyKcal, t.energyKcal.good, t.energyKcal.poor);
     case 'lowSugar':
-      return scoreLower(n.sugar, 5, 25);
+      return unknown(n.sugar) ? 50 : scoreLower(n.sugar, t.sugar.good, t.sugar.poor);
     case 'highFiber':
-      return scoreHigher(n.fiber, 8, 1);
+      return unknown(n.fiber) ? 50 : scoreHigher(n.fiber, t.fiber.good, t.fiber.poor);
     case 'lowSodium':
-      return scoreLower(n.sodium, 200, 800);
+      return unknown(n.sodium) ? 50 : scoreLower(n.sodium, t.sodium.good, t.sodium.poor);
     case 'cleanIngredients':
       return scoreCleanIngredients(product);
     case 'heartHealth': {
-      const sat = scoreLower(n.saturatedFat, 2, 10);
-      const sodium = scoreLower(n.sodium, 200, 800);
-      const fiber = scoreHigher(n.fiber, 6, 1);
+      const sat = unknown(n.saturatedFat) ? 50 : scoreLower(n.saturatedFat, t.saturatedFat.good, t.saturatedFat.poor);
+      const sodium = unknown(n.sodium) ? 50 : scoreLower(n.sodium, t.sodium.good, t.sodium.poor);
+      const fiber = unknown(n.fiber) ? 50 : scoreHigher(n.fiber, t.fiber.good, t.fiber.poor);
       return Math.round((sat + sodium + fiber) / 3);
     }
     case 'bloodSugarControl': {
-      const sugar = scoreLower(n.sugar, 5, 30);
-      const carbs = scoreLower(n.carbs, 15, 60);
+      const sugar = unknown(n.sugar) ? 50 : scoreLower(n.sugar, t.sugar.good, t.sugar.poor);
+      const carbs = unknown(n.carbs) ? 50 : scoreLower(n.carbs, t.carbs.good, t.carbs.poor);
       return Math.round((sugar + carbs) / 2);
     }
     default:
@@ -85,37 +88,47 @@ function explainSubscore(goalKey, subscore, product) {
     case 'buildMuscle':
     case 'highProtein':
       add(
-        n.protein != null && n.protein >= 15,
-        `High protein (${n.protein}g/100g) matched your ${label} priority.`,
-        `Protein is relatively low for your ${label} setting.`
+        n.protein != null && n.protein >= thresholds(product).protein.good - 3,
+        `${formatNutrientValue('protein', n.protein, product)} — supports your ${label} priority.`,
+        n.protein != null
+          ? `${formatNutrientValue('protein', n.protein, product)} — relatively low for your ${label} setting.`
+          : formatNutrientValue('protein', null, product)
       );
       break;
     case 'loseWeight':
       add(
-        n.energyKcal != null && n.energyKcal <= 200,
-        `Calories per 100g are relatively low for your ${label} priority.`,
-        `Calorie density is higher than ideal for your ${label} setting.`
+        n.energyKcal != null && n.energyKcal <= thresholds(product).energyKcal.good + 30,
+        `${formatNutrientValue('energyKcal', n.energyKcal, product)} — relatively low for your ${label} priority.`,
+        n.energyKcal != null
+          ? `${formatNutrientValue('energyKcal', n.energyKcal, product)} — higher than ideal for your ${label} setting.`
+          : formatNutrientValue('energyKcal', null, product)
       );
       break;
     case 'lowSugar':
       add(
-        n.sugar != null && n.sugar <= 8,
-        `Sugar is within a range that fits your ${label} preference.`,
-        `Sugar is above what you prefer for ${label}.`
+        n.sugar != null && n.sugar <= thresholds(product).sugar.good + 2,
+        `${formatNutrientValue('sugar', n.sugar, product)} — fits your ${label} preference.`,
+        n.sugar != null
+          ? `${formatNutrientValue('sugar', n.sugar, product)} — above your ${label} preference.`
+          : formatNutrientValue('sugar', null, product)
       );
       break;
     case 'highFiber':
       add(
-        n.fiber != null && n.fiber >= 5,
-        `Fiber content supports your ${label} priority.`,
-        `Fiber is low relative to your ${label} setting.`
+        n.fiber != null && n.fiber >= thresholds(product).fiber.good - 1,
+        `${formatNutrientValue('fiber', n.fiber, product)} — supports your ${label} priority.`,
+        n.fiber != null
+          ? `${formatNutrientValue('fiber', n.fiber, product)} — low for your ${label} setting.`
+          : formatNutrientValue('fiber', null, product)
       );
       break;
     case 'lowSodium':
       add(
-        n.sodium != null && n.sodium <= 400,
-        `Sodium is moderate for your ${label} preference.`,
-        `Sodium is high for your ${label} setting.`
+        n.sodium != null && n.sodium <= thresholds(product).sodium.good + 150,
+        `${formatNutrientValue('sodium', n.sodium, product)} — moderate for your ${label} preference.`,
+        n.sodium != null
+          ? `${formatNutrientValue('sodium', n.sodium, product)} — high for your ${label} setting.`
+          : formatNutrientValue('sodium', null, product)
       );
       break;
     case 'cleanIngredients':
@@ -212,39 +225,47 @@ function buildNutrientContributions(product, breakdown, ingredientAnalysis, acti
       'Protein',
       proteinScore,
       proteinScore != null
-        ? `Protein per 100g: ${n.protein ?? '—'}g`
+        ? formatNutrientValue('protein', n.protein, product)
         : 'Enable a protein-related goal to weight protein.'
     ),
     calories: mk(
       'calories',
       'Calories',
       calorieScore,
-      calorieScore != null ? `Energy per 100g: ${n.energyKcal ?? '—'} kcal` : 'Enable Lose weight to weight calories.'
+      calorieScore != null
+        ? formatNutrientValue('energyKcal', n.energyKcal, product)
+        : 'Enable Lose weight to weight calories.'
     ),
     fiber: mk(
       'fiber',
       'Fiber',
       fiberScore,
-      fiberScore != null ? `Fiber per 100g: ${n.fiber ?? '—'}g` : 'Enable a fiber-related goal to weight fiber.'
+      fiberScore != null
+        ? formatNutrientValue('fiber', n.fiber, product)
+        : 'Enable a fiber-related goal to weight fiber.'
     ),
     sugar: mk(
       'sugar',
       'Sugar',
       sugarScore,
-      sugarScore != null ? `Sugar per 100g: ${n.sugar ?? '—'}g` : 'Enable a sugar-related goal to weight sugar.'
+      sugarScore != null
+        ? formatNutrientValue('sugar', n.sugar, product)
+        : 'Enable a sugar-related goal to weight sugar.'
     ),
     sodium: mk(
       'sodium',
       'Sodium',
       sodiumScore,
-      sodiumScore != null ? `Sodium per 100g: ${n.sodium ?? '—'}mg` : 'Enable a sodium-related goal to weight sodium.'
+      sodiumScore != null
+        ? formatNutrientValue('sodium', n.sodium, product)
+        : 'Enable a sodium-related goal to weight sodium.'
     ),
     saturatedFat: mk(
       'saturatedFat',
       'Saturated fat',
       satFatScore,
       satFatScore != null
-        ? `Saturated fat per 100g: ${n.saturatedFat ?? '—'}g`
+        ? formatNutrientValue('saturatedFat', n.saturatedFat, product)
         : 'Enable Heart health to weight saturated fat.'
     ),
     ingredientQuality: mk(
@@ -259,6 +280,7 @@ function buildNutrientContributions(product, breakdown, ingredientAnalysis, acti
 }
 
 export function scoreProduct(product, user) {
+  product = resolveForScoring(product);
   const confidence = product.confidence ?? 'medium';
 
   if (!canConfidentlyScore(confidence)) {
@@ -280,6 +302,11 @@ export function scoreProduct(product, user) {
       scoreSummary: null,
       visualDrivers: { positive: [], negative: [] },
       compatibility: { conflicts: [], warnings: [CONFIDENCE_MESSAGES.low] },
+      nutritionBasis: product.nutritionBasis,
+      nutritionBasisWarning: product.nutritionBasisWarning,
+      nutrientsPer100g: product.nutrientsPer100g,
+      nutrientsPerServing: product.nutrientsPerServing,
+      servingLabel: product.servingLabel,
     };
   }
 
@@ -427,6 +454,18 @@ export function scoreProduct(product, user) {
       warnings: allergyAnalysis.warnings,
     },
   };
+
+  result.nutritionBasis = product.nutritionBasis;
+  result.nutrientsPer100g = product.nutrientsPer100g;
+  result.nutrientsPerServing = product.nutrientsPerServing;
+  result.servingLabel = product.servingLabel;
+  if (product.nutritionBasisWarning) {
+    result.nutritionBasisWarning = product.nutritionBasisWarning;
+    result.compatibility.warnings = [
+      product.nutritionBasisWarning,
+      ...(result.compatibility.warnings ?? []),
+    ];
+  }
 
   if (confidence === 'medium') {
     result.dataWarning = CONFIDENCE_MESSAGES.medium;

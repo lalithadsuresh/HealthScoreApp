@@ -3,6 +3,7 @@ import {
   extractRawSignals,
   sortByUsEnglishPriority,
 } from './productConfidence.js';
+import { buildNutrientProfiles, hasMeaningfulNutrients } from './nutrients.js';
 
 const OFF_BASE = 'https://world.openfoodfacts.org';
 
@@ -12,6 +13,11 @@ const PRODUCT_FIELDS = [
   'product_name_en',
   'brands',
   'quantity',
+  'serving_size',
+  'serving_quantity',
+  'nutrition_data_per',
+  'categories',
+  'categories_tags',
   'image_front_url',
   'image_url',
   'ingredients_text',
@@ -37,28 +43,17 @@ const SEARCH_FIELDS = [
   'allergens_tags',
   'countries_tags',
   'countries',
+  'serving_size',
+  'serving_quantity',
+  'nutrition_data_per',
   'nutriments',
 ].join(',');
 
-function num(value) {
-  const n = parseFloat(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function parseNutriments(nutriments = {}) {
+function attachNutrients(product, raw, nutrimentsRaw) {
+  const profiles = buildNutrientProfiles(raw, nutrimentsRaw);
   return {
-    energyKcal: num(nutriments['energy-kcal_100g'] ?? nutriments.energy_kcal_100g),
-    protein: num(nutriments.proteins_100g),
-    fat: num(nutriments.fat_100g),
-    saturatedFat: num(nutriments['saturated-fat_100g']),
-    carbs: num(nutriments.carbohydrates_100g),
-    sugar: num(nutriments.sugars_100g),
-    fiber: num(nutriments.fiber_100g),
-    sodium: num(nutriments.sodium_100g)
-      ? num(nutriments.sodium_100g) * 1000
-      : num(nutriments.salt_100g)
-        ? num(nutriments.salt_100g) * 400
-        : null,
+    ...product,
+    ...profiles,
   };
 }
 
@@ -67,7 +62,6 @@ export function normalizeProduct(raw) {
 
   const p = raw.product ?? raw;
   const signals = extractRawSignals(raw);
-  const nutriments = parseNutriments(p.nutriments ?? {});
   const additives = p.additives_tags ?? [];
 
   const name =
@@ -80,13 +74,12 @@ export function normalizeProduct(raw) {
     (signals.englishIngredients ? p.ingredients_text_en ?? p.ingredients_text ?? '' : '') ||
     '';
 
-  const product = {
+  let product = {
     barcode: String(p.code ?? p._id ?? '').replace(/\D/g, '') || String(p.code ?? ''),
     name: name || 'Unknown product',
     brand: p.brands ?? '',
     imageUrl: p.image_front_url ?? p.image_url ?? null,
     quantity: p.quantity ?? '',
-    nutriments,
     novaGroup: p.nova_group ?? null,
     additivesCount: additives.length,
     additivesTags: additives,
@@ -101,12 +94,14 @@ export function normalizeProduct(raw) {
     source: 'openfoodfacts',
   };
 
+  product = attachNutrients(product, raw, p.nutriments ?? {});
+
   product.confidence = computeConfidence({
     isUs: signals.isUs,
     englishName: signals.englishName,
     englishIngredients: signals.englishIngredients,
     hasAllergenTags: signals.hasAllergenTags,
-    nutriments,
+    nutriments: product.nutriments,
   });
 
   return product;
@@ -114,29 +109,30 @@ export function normalizeProduct(raw) {
 
 function normalizeSearchHit(item) {
   const signals = extractRawSignals({ product: item });
-  const nutriments = parseNutriments(item.nutriments ?? {});
   const name =
     signals.nameEn ||
     (signals.englishName ? item.product_name ?? 'Unknown' : 'Unknown');
 
-  const product = {
+  let product = {
     barcode: item.code,
     name,
     brand: item.brands ?? '',
     imageUrl: item.image_front_url ?? null,
-    nutriments,
     isUsSold: signals.isUs,
     hasEnglishName: signals.englishName,
     hasEnglishIngredients: signals.englishIngredients,
     allergensTags: signals.allergensTags,
-    confidence: computeConfidence({
-      isUs: signals.isUs,
-      englishName: signals.englishName,
-      englishIngredients: signals.englishIngredients,
-      hasAllergenTags: signals.hasAllergenTags,
-      nutriments,
-    }),
   };
+
+  product = attachNutrients(product, { product: item }, item.nutriments ?? {});
+
+  product.confidence = computeConfidence({
+    isUs: signals.isUs,
+    englishName: signals.englishName,
+    englishIngredients: signals.englishIngredients,
+    hasAllergenTags: signals.hasAllergenTags,
+    nutriments: product.nutriments,
+  });
 
   return product;
 }
