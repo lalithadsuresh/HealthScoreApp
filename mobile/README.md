@@ -40,6 +40,16 @@ npm install
 npx expo start
 ```
 
+### `npm install` errors (ERESOLVE / reanimated)?
+
+Expo SDK 56 requires aligned versions (`react-native-reanimated@~4.3.1`, `expo-constants@~56.x`, etc.).
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+# or: npx expo install --fix
+```
+
 Scan the QR code with the **Camera** app (iOS) → opens in Expo Go.
 
 Press `i` in the terminal for iOS Simulator (uses `localhost` for API if simulator runs on same Mac).
