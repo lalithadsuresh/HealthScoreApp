@@ -1,45 +1,37 @@
 # AGENTS.md
 
-Guidance for AI agents working in this repository.
-
-## Repository status
-
-**HealthScoreApp** (`https://github.com/lalithadsuresh/HealthScoreApp`) is currently a **scaffold only**: the only tracked file is an empty `README.md`. There is no application source, no package manifests, no Docker/Compose setup, and no lint/test/build scripts yet.
-
-Until application code lands, there is nothing to install beyond what the Cloud VM already provides, and no services to start for end-to-end testing.
-
 ## Cursor Cloud specific instructions
 
-### What runs on VM startup
+### Services
 
-The update script is a no-op (`true`) because this repo has no dependency manifests. Do not add `npm install`, `pip install`, or similar until a lockfile or requirements file exists in the tree.
+| Service | Port | Required |
+|---------|------|----------|
+| MongoDB (`docker compose up -d`) | 27017 | Yes |
+| Express API (`npm run dev:server`) | 3001 | Yes |
+| Vite client (`npm run dev:client`) | 5173 | Yes for UI |
 
-### Toolchain already on the VM
+### First-time / startup
 
-These are available without extra setup (versions may drift slightly on image updates):
+```bash
+docker compose up -d
+cp -n server/.env.example server/.env   # only if server/.env missing
+npm run install:all
+npm run dev
+```
 
-| Tool | Notes |
-|------|--------|
-| **Git** | Repo root is `/workspace`; default branch `main` |
-| **Node.js** | v22.x via nvm (`node`, `npm`, `pnpm`, `yarn`) |
-| **Python** | 3.12 (`python3`, `pip`) |
+Open http://localhost:5173 — Vite proxies `/api` to port 3001.
 
-Docker is not required for the current tree (no containers defined).
+### VM update script
 
-### Lint / test / build / run
-
-No project commands exist yet. After code is added, document them here and in `README.md`, for example:
-
-- Lint: TBD (e.g. `npm run lint`, `ruff check`)
-- Test: TBD (e.g. `npm test`, `pytest`)
-- Dev server: TBD (e.g. `npm run dev`)
-
-### Services (when the app exists)
-
-No required or optional services are defined today. When you add a backend, database, or frontend dev server, list startup order and ports in this section so future Cloud agents can run E2E flows without guessing.
+Runs `npm run install:all` at repo root (installs root, `server/`, and `client/`).
 
 ### Gotchas
 
-- **Do not assume monorepo layout** — there are no `apps/` or `packages/` directories yet.
-- **No secrets or `.env.example`** — nothing to configure until the stack is chosen.
-- If you add dependencies, update the VM **update script** via `SetupVmEnvironment` to match the lockfile (e.g. `npm ci` or `pnpm install --frozen-lockfile`) and add non-obvious startup notes here, not in the update script.
+- API fails on boot if MongoDB is not running — start `docker compose` first.
+- `server/.env` is gitignored; copy from `server/.env.example` if missing.
+- Barcode camera needs HTTPS or localhost; manual barcode entry works everywhere.
+- Open Food Facts is public; some barcodes return incomplete nutrition (subscores default toward neutral).
+
+### Lint / test
+
+No dedicated lint/test scripts in MVP. Verify with `npm run build` (client) and `curl http://localhost:3001/api/health`.
