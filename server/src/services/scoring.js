@@ -1,5 +1,7 @@
 import { GOAL_KEYS, GOAL_LABELS } from '../constants/goals.js';
 import { analyzeIngredientPreferences } from './ingredientScoring.js';
+import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
+import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -255,16 +257,21 @@ function buildNutrientContributions(product, breakdown, ingredientAnalysis, acti
 }
 
 export function scoreProduct(product, user) {
-  const weights = user.goalWeights ?? {};
-  const selected = user.selectedGoals?.length
-    ? user.selectedGoals.filter((g) => GOAL_KEYS.includes(g))
-    : GOAL_KEYS.filter((g) => (weights[g] ?? 0) > 0);
+  const derived = user.primaryGoal
+    ? deriveScoringProfile(user)
+    : {
+        selectedGoals: user.selectedGoals?.length
+          ? user.selectedGoals.filter((g) => GOAL_KEYS.includes(g))
+          : GOAL_KEYS.filter((g) => (user.goalWeights?.[g] ?? 0) > 0),
+        goalWeights: user.goalWeights ?? {},
+      };
 
-  const activeGoals = selected.length
-    ? selected
-    : GOAL_KEYS.filter((g) => (weights[g] ?? 0) > 0);
+  const weights = derived.goalWeights ?? {};
+  const goalsToScore = derived.selectedGoals?.length
+    ? derived.selectedGoals
+    : ['highProtein', 'lowSugar'];
 
-  const goalsToScore = activeGoals.length ? activeGoals : ['highProtein', 'lowSugar'];
+  const goalDisplayName = getGoalDisplayName(user);
 
   const breakdown = [];
   let weightedSum = 0;
@@ -295,6 +302,11 @@ export function scoreProduct(product, user) {
     user.ingredientPreferences ?? {}
   );
 
+  const allergyAnalysis = analyzeAllergiesAndRestrictions(
+    product,
+    user.allergiesRestrictions ?? []
+  );
+
   let overallScore = goalOnlyScore;
   if (ingredientAnalysis.hasEnabledPrefs) {
     const ingWeight = 6;
@@ -302,6 +314,10 @@ export function scoreProduct(product, user) {
       (goalOnlyScore * weightTotal + ingredientAnalysis.subscore * ingWeight) /
         (weightTotal + ingWeight)
     );
+  }
+
+  if (allergyAnalysis.scorePenalty > 0) {
+    overallScore = Math.max(0, overallScore - allergyAnalysis.scorePenalty);
   }
 
   const nutrientContributions = buildNutrientContributions(
@@ -326,6 +342,14 @@ export function scoreProduct(product, user) {
         source: b.label,
       });
     }
+  }
+
+  for (const c of allergyAnalysis.conflicts) {
+    negativeDrivers.push({
+      text: c.message,
+      category: 'compatibility',
+      source: c.label,
+    });
   }
 
   for (const d of ingredientAnalysis.drivers) {
@@ -358,5 +382,11 @@ export function scoreProduct(product, user) {
     },
     whyScoredWell: topWins.filter((d) => d.category !== 'ingredient').slice(0, 3),
     whyLostPoints: topLosses.slice(0, 4),
+    goalDisplayName,
+    scoreHeadline: `${clamp(overallScore)}/100 for your ${goalDisplayName} goal`,
+    compatibility: {
+      conflicts: allergyAnalysis.conflicts,
+      warnings: allergyAnalysis.warnings,
+    },
   };
 }

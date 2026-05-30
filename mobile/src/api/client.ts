@@ -64,6 +64,11 @@ export const api = {
     goalWeights: Record<string, number>;
     selectedGoals: string[];
     ingredientPreferences: Record<string, boolean>;
+    primaryGoal: string;
+    goalFocus: string;
+    goalFocusOther: string;
+    personalPriorities: string[];
+    allergiesRestrictions: string[];
     onboardingComplete: boolean;
   }>) =>
     request<{ user: User }>('/user/profile', {

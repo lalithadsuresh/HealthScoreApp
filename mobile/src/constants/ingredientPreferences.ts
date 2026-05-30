@@ -6,6 +6,7 @@ export const INGREDIENT_PREF_KEYS = [
   'preferMinimalIngredients',
   'avoidHFCS',
   'avoidPreservatives',
+  'avoidHighlyProcessed',
 ] as const;
 
 export type IngredientPrefKey = (typeof INGREDIENT_PREF_KEYS)[number];
@@ -38,6 +39,7 @@ export const INGREDIENT_PREF_META: Record<
     label: 'Avoid high-fructose corn syrup',
     hint: 'Flag HFCS and similar syrups',
   },
+  avoidHighlyProcessed: { label: 'Avoid highly processed foods', hint: 'NOVA 4 when available' },
   avoidPreservatives: {
     label: 'Avoid preservatives / additives',
     hint: 'Flag common preservatives you prefer to limit',

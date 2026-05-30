@@ -127,6 +127,22 @@ export function analyzeIngredientPreferences(product, prefs) {
     }
   }
 
+  if (prefs?.avoidHighlyProcessed && product.novaGroup != null && product.novaGroup >= 4) {
+    subscore -= 14;
+    drivers.push({
+      type: 'negative',
+      category: 'ingredient',
+      text: 'You prefer to limit highly processed foods (NOVA group 4).',
+      preferenceKey: 'avoidHighlyProcessed',
+    });
+    matches.push({
+      preferenceKey: 'avoidHighlyProcessed',
+      label: INGREDIENT_PREF_LABELS.avoidHighlyProcessed,
+      detected: ['NOVA 4'],
+      matched: true,
+    });
+  }
+
   if (prefs?.preferMinimalIngredients) {
     const count = countIngredients(product);
     const label = INGREDIENT_PREF_LABELS.preferMinimalIngredients;
