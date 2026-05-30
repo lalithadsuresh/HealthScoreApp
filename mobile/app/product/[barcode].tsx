@@ -76,7 +76,10 @@ export default function ProductResultScreen() {
           ) : null}
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
-          <ScoreCircle score={score.overallScore} label="Goal-based score" />
+          <Text style={{ fontSize: 17, fontWeight: '700', textAlign: 'center', color: colors.primaryDark, marginBottom: 8 }}>
+            {score.scoreHeadline ?? `${score.overallScore}/100 for your goals`}
+          </Text>
+          <ScoreCircle score={score.overallScore} label="Your score" />
           
         {score.whyThisScore && (
           <>

@@ -1,0 +1,140 @@
+export const PRIMARY_GOALS = [
+  'bulk',
+  'cut',
+  'maintain',
+  'athleticPerformance',
+  'heartHealth',
+  'bloodSugarAwareness',
+  'generalWellness',
+];
+
+export const PRIMARY_GOAL_LABELS = {
+  bulk: 'Bulk',
+  cut: 'Cut',
+  maintain: 'Maintain',
+  athleticPerformance: 'Athletic Performance',
+  heartHealth: 'Heart Health',
+  bloodSugarAwareness: 'Blood Sugar Awareness',
+  generalWellness: 'General Wellness',
+};
+
+export const GOAL_FOCUS_OPTIONS = {
+  bulk: [
+    { id: 'leanBulk', label: 'Lean bulk', description: 'Prioritize protein with moderate calories' },
+    { id: 'maxCalories', label: 'Maximize calories', description: 'Higher calorie density helps your score' },
+    { id: 'maxProtein', label: 'Maximize protein', description: 'Protein density matters most' },
+    { id: 'cleanEating', label: 'Clean eating', description: 'Ingredient quality while bulking' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  cut: [
+    { id: 'fatLoss', label: 'Fat loss', description: 'Lower calories and supportive macros' },
+    { id: 'fullness', label: 'Fullness', description: 'Fiber and volume-friendly choices' },
+    { id: 'preserveMuscle', label: 'Preserve muscle', description: 'Keep protein high while cutting' },
+    { id: 'lowerCalories', label: 'Lower calories', description: 'Calorie density is the main lever' },
+    { id: 'cleanEating', label: 'Clean eating', description: 'Ingredient quality while cutting' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  maintain: [
+    { id: 'balancedEnergy', label: 'Balanced energy', description: 'Steady calories and macros' },
+    { id: 'bodyComposition', label: 'Body composition', description: 'Balance protein, calories, and sugar' },
+    { id: 'ingredientQuality', label: 'Ingredient quality', description: 'Cleaner labels day to day' },
+    { id: 'cleanEating', label: 'Clean eating', description: 'Whole-food leaning maintenance' },
+    { id: 'flexibleMaintenance', label: 'Flexible maintenance', description: 'Room for variety, still goal-aware' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  athleticPerformance: [
+    { id: 'energy', label: 'Energy', description: 'Fuel for training and activity' },
+    { id: 'recovery', label: 'Recovery', description: 'Protein and supportive nutrients' },
+    { id: 'hydration', label: 'Hydration', description: 'Sodium and balance awareness' },
+    { id: 'endurance', label: 'Endurance', description: 'Carbs and steady energy' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  heartHealth: [
+    { id: 'lowerSodium', label: 'Lower sodium', description: 'Sodium awareness in scoring' },
+    { id: 'lowerSatFat', label: 'Lower saturated fat', description: 'Saturated fat awareness' },
+    { id: 'moreFiber', label: 'More fiber', description: 'Fiber-forward choices' },
+    { id: 'wholeFoods', label: 'Whole foods', description: 'Less processed options' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  bloodSugarAwareness: [
+    { id: 'lowerSugar', label: 'Lower sugar', description: 'Sugar content matters most' },
+    { id: 'stableEnergy', label: 'Stable energy', description: 'Avoid spikes and crashes' },
+    { id: 'lowerCarbs', label: 'Lower carbs', description: 'Carb awareness per 100g' },
+    { id: 'glycemicAware', label: 'Glycemic awareness', description: 'Sugar + carb balance' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+  generalWellness: [
+    { id: 'feelBetter', label: 'Feel better day to day', description: 'Balanced, sustainable choices' },
+    { id: 'balancedMeals', label: 'Balanced meals', description: 'Mix of macros without extremes' },
+    { id: 'ingredientQuality', label: 'Ingredient quality', description: 'Cleaner ingredient lists' },
+    { id: 'avoidCrashes', label: 'Avoid energy crashes', description: 'Sugar and carb awareness' },
+    { id: 'cleanEating', label: 'Clean eating', description: 'Whole-food leaning wellness' },
+    { id: 'other', label: 'Other', description: 'Something else — you’ll set priorities next' },
+  ],
+};
+
+export const PERSONAL_PRIORITIES = [
+  'protein',
+  'fiber',
+  'energy',
+  'fullness',
+  'ingredientQuality',
+  'lowerSugar',
+  'lowerSodium',
+  'lowerSaturatedFat',
+  'higherCalories',
+  'lowerCalories',
+  'recoveryFuel',
+];
+
+export const PERSONAL_PRIORITY_LABELS = {
+  protein: 'Protein',
+  fiber: 'Fiber',
+  energy: 'Energy',
+  fullness: 'Fullness',
+  ingredientQuality: 'Ingredient quality',
+  lowerSugar: 'Lower sugar',
+  lowerSodium: 'Lower sodium',
+  lowerSaturatedFat: 'Lower saturated fat',
+  higherCalories: 'Higher calories',
+  lowerCalories: 'Lower calories',
+  recoveryFuel: 'Recovery fuel',
+};
+
+export const ALLERGY_RESTRICTION_KEYS = [
+  'peanuts',
+  'treeNuts',
+  'dairy',
+  'eggs',
+  'soy',
+  'wheat',
+  'sesame',
+  'fish',
+  'shellfish',
+  'glutenFree',
+  'dairyFree',
+  'vegan',
+  'vegetarian',
+  'pescatarian',
+  'halal',
+  'kosher',
+];
+
+export const ALLERGY_RESTRICTION_LABELS = {
+  peanuts: 'Peanuts',
+  treeNuts: 'Tree nuts',
+  dairy: 'Dairy',
+  eggs: 'Eggs',
+  soy: 'Soy',
+  wheat: 'Wheat',
+  sesame: 'Sesame',
+  fish: 'Fish',
+  shellfish: 'Shellfish',
+  glutenFree: 'Gluten-free',
+  dairyFree: 'Dairy-free',
+  vegan: 'Vegan',
+  vegetarian: 'Vegetarian',
+  pescatarian: 'Pescatarian',
+  halal: 'Halal',
+  kosher: 'Kosher',
+};

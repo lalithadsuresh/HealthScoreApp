@@ -10,6 +10,11 @@ export interface User {
   email: string;
   goalWeights: GoalWeights;
   selectedGoals: GoalKey[];
+  primaryGoal?: string | null;
+  goalFocus?: string | null;
+  goalFocusOther?: string;
+  personalPriorities?: string[];
+  allergiesRestrictions?: string[];
   ingredientPreferences?: IngredientPreferences;
   onboardingComplete: boolean;
   createdAt?: string;
@@ -85,6 +90,12 @@ export interface ProductScore {
     positive?: boolean;
   }[];
   ingredientPreferenceScore?: number | null;
+  goalDisplayName?: string;
+  scoreHeadline?: string;
+  compatibility?: {
+    conflicts: { message: string; label: string; detected?: string }[];
+    warnings: string[];
+  };
 }
 
 export interface SearchResult {

@@ -18,7 +18,7 @@ export default function LoginScreen() {
     try {
       const u = await login(email.trim(), password);
       if (u.onboardingComplete) router.replace('/(tabs)');
-      else router.replace('/(onboarding)/goals');
+      else router.replace('/(onboarding)/primary');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed');
     } finally {

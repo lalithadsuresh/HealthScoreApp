@@ -108,7 +108,10 @@ export default function ProductResult() {
         {product.brand && (
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>{product.brand}</p>
         )}
-        <ScoreCircle score={score.overallScore} label="Your goal-based score" />
+        <p style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem', color: 'var(--primary-dark)' }}>
+          {score.scoreHeadline ?? `${score.overallScore}/100 for your goals`}
+        </p>
+        <ScoreCircle score={score.overallScore} label="Your personalized score" />
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
           Based on your nutrition goals and optional ingredient preferences
         </p>
@@ -137,6 +140,18 @@ export default function ProductResult() {
           variant="warn"
         />
       </div>
+
+      {score.compatibility?.conflicts?.length > 0 && (
+        <div className="card" style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
+          <h3 style={{ marginTop: 0 }}>Compatibility notes</h3>
+          {score.compatibility.warnings?.map((w, i) => (
+            <p key={`w-${i}`} style={{ fontSize: '0.85rem', color: '#991b1b' }}>{w}</p>
+          ))}
+          {score.compatibility.conflicts.map((c, i) => (
+            <p key={`c-${i}`} style={{ margin: '0.35rem 0', lineHeight: 1.45 }}>⚠ {c.message}</p>
+          ))}
+        </div>
+      )}
 
       {why.ingredientDrivers?.length > 0 && (
         <div className="card">

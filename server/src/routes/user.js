@@ -7,7 +7,18 @@ const router = Router();
 
 router.patch('/profile', authRequired, loadUser, async (req, res) => {
   try {
-    const { name, goalWeights, selectedGoals, onboardingComplete, ingredientPreferences } = req.body;
+    const {
+      name,
+      goalWeights,
+      selectedGoals,
+      onboardingComplete,
+      ingredientPreferences,
+      primaryGoal,
+      goalFocus,
+      goalFocusOther,
+      personalPriorities,
+      allergiesRestrictions,
+    } = req.body;
     const user = req.user;
 
     if (name?.trim()) user.name = name.trim();
@@ -33,6 +44,12 @@ router.patch('/profile', authRequired, loadUser, async (req, res) => {
       }
       user.markModified('ingredientPreferences');
     }
+
+    if (primaryGoal != null) user.primaryGoal = primaryGoal;
+    if (goalFocus != null) user.goalFocus = goalFocus;
+    if (goalFocusOther != null) user.goalFocusOther = String(goalFocusOther).slice(0, 120);
+    if (personalPriorities) user.personalPriorities = personalPriorities;
+    if (allergiesRestrictions) user.allergiesRestrictions = allergiesRestrictions;
 
     if (onboardingComplete != null) {
       user.onboardingComplete = Boolean(onboardingComplete);

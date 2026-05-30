@@ -9,7 +9,7 @@ export default function TabsLayout() {
 
   if (loading) return <LoadingCenter />;
   if (!user) return <Redirect href="/" />;
-  if (!user.onboardingComplete) return <Redirect href="/(onboarding)/goals" />;
+  if (!user.onboardingComplete) return <Redirect href="/(onboarding)/primary" />;
 
   return (
     <Tabs

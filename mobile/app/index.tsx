@@ -13,7 +13,7 @@ export default function WelcomeScreen() {
 
   if (loading) return <LoadingCenter />;
   if (user?.onboardingComplete) return <Redirect href="/(tabs)" />;
-  if (user) return <Redirect href="/(onboarding)/goals" />;
+  if (user) return <Redirect href="/(onboarding)/primary" />;
 
   return (
     <ScrollView

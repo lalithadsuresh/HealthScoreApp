@@ -23,7 +23,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signup(name.trim(), email.trim(), password);
-      router.replace('/(onboarding)/goals');
+      router.replace('/(onboarding)/primary');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Signup failed');
     } finally {

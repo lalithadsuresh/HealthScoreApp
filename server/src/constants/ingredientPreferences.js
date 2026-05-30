@@ -6,6 +6,7 @@ export const INGREDIENT_PREF_KEYS = [
   'preferMinimalIngredients',
   'avoidHFCS',
   'avoidPreservatives',
+  'avoidHighlyProcessed',
 ];
 
 export const INGREDIENT_PREF_LABELS = {
@@ -16,6 +17,7 @@ export const INGREDIENT_PREF_LABELS = {
   preferMinimalIngredients: 'Prefer minimal ingredients',
   avoidHFCS: 'Avoid high-fructose corn syrup',
   avoidPreservatives: 'Avoid preservatives / additives',
+  avoidHighlyProcessed: 'Avoid highly processed foods',
 };
 
 export const DEFAULT_INGREDIENT_PREFERENCES = Object.fromEntries(
