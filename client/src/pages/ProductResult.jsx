@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import AppLayout from '../components/AppLayout.jsx';
 import ScoreCircle, { scoreColor } from '../components/ScoreCircle.jsx';
 import { DriverChips, ScoreSummaryCard } from '../components/ScoreBreakdown.jsx';
+import NutritionFacts from '../components/NutritionFacts.jsx';
 
 export default function ProductResult() {
   const { barcode } = useParams();
@@ -50,7 +51,6 @@ export default function ProductResult() {
   }
 
   const { product, score, alternatives } = data;
-  const n = product.nutriments ?? {};
   const summary = score.scoreSummary;
   const drivers = score.visualDrivers ?? { positive: [], negative: [] };
   const showScore = score.confidentScore !== false && score.overallScore != null;
@@ -89,9 +89,16 @@ export default function ProductResult() {
         )}
       </div>
 
-      {dataWarning && (
+      {(dataWarning || score.nutritionBasisWarning) && (
         <div className="card" style={{ borderColor: '#fde68a', background: '#fffbeb' }}>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>{dataWarning}</p>
+          {score.nutritionBasisWarning && (
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#92400e' }}>
+              {score.nutritionBasisWarning}
+            </p>
+          )}
+          {dataWarning && (
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>{dataWarning}</p>
+          )}
         </div>
       )}
 
@@ -124,23 +131,7 @@ export default function ProductResult() {
         </div>
       )}
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Nutrition (per 100g)</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-          {[
-            ['Calories', n.energyKcal, 'kcal'],
-            ['Protein', n.protein, 'g'],
-            ['Sugar', n.sugar, 'g'],
-            ['Fiber', n.fiber, 'g'],
-            ['Sodium', n.sodium, 'mg'],
-          ].map(([label, val, unit]) => (
-            <div key={label}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{label}</div>
-              <strong>{val != null ? `${Math.round(val * 10) / 10} ${unit}` : '—'}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
+      <NutritionFacts product={product} />
 
       {alternatives?.length > 0 && (
         <div className="card">

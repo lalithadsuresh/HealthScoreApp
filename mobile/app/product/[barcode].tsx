@@ -11,6 +11,7 @@ import {
 import { api } from '../../src/api/client';
 import { ScoreCircle } from '../../src/components/ScoreCircle';
 import { DriverChips, ScoreSummaryCard } from '../../src/components/ScoreBreakdown';
+import { NutritionFacts } from '../../src/components/NutritionFacts';
 import { Button, Card, ErrorBanner, LoadingCenter } from '../../src/components/ui';
 import type { Product, ProductScore, SearchResult } from '../../src/types/api';
 import { colors, scoreColor } from '../../src/theme';
@@ -65,7 +66,6 @@ export default function ProductResultScreen() {
     );
   }
 
-  const n = product.nutriments;
   const summary = score.scoreSummary;
   const drivers = score.visualDrivers ?? { positive: [], negative: [] };
   const showScore = score.confidentScore !== false && score.overallScore != null;
@@ -88,9 +88,12 @@ export default function ProductResultScreen() {
           )}
         </Card>
 
-        {dataWarning ? (
+        {(dataWarning || score.nutritionBasisWarning) ? (
           <Card style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
-            <Text style={styles.bullet}>{dataWarning}</Text>
+            {score.nutritionBasisWarning ? (
+              <Text style={styles.bullet}>{score.nutritionBasisWarning}</Text>
+            ) : null}
+            {dataWarning ? <Text style={styles.bullet}>{dataWarning}</Text> : null}
           </Card>
         ) : null}
 
@@ -122,26 +125,7 @@ export default function ProductResultScreen() {
             <Text style={styles.muted}>{product.ingredientsText}</Text>
           </Card>
         ) : null}
-
-        <Card>
-          <Text style={styles.section}>Nutrition (per 100g)</Text>
-          <View style={styles.grid}>
-            {[
-              ['Calories', n.energyKcal, 'kcal'],
-              ['Protein', n.protein, 'g'],
-              ['Sugar', n.sugar, 'g'],
-              ['Fiber', n.fiber, 'g'],
-              ['Sodium', n.sodium, 'mg'],
-            ].map(([label, val, unit]) => (
-              <View key={String(label)} style={styles.gridItem}>
-                <Text style={styles.gridLabel}>{label}</Text>
-                <Text style={styles.gridVal}>
-                  {val != null ? `${Math.round(Number(val) * 10) / 10} ${unit}` : '—'}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Card>
+        <NutritionFacts product={product} />
 
         {alternatives.length > 0 && (
           <Card>

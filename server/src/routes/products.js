@@ -11,6 +11,7 @@ import {
   searchCachedProducts,
 } from '../services/productCache.js';
 import { scoreProduct } from '../services/scoring.js';
+import { resolveForScoring } from '../services/nutrients.js';
 import { sortByUsEnglishPriority } from '../services/productConfidence.js';
 
 const router = Router();
@@ -61,7 +62,7 @@ router.get('/barcode/:code', authRequired, loadUser, async (req, res) => {
 
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    const score = scoreProduct(product, req.user);
+    const score = scoreProduct(resolveForScoring(product), req.user);
     let alternatives = [];
 
     if (score.confidentScore !== false) {

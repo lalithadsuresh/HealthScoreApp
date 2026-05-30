@@ -1,5 +1,15 @@
 import { GOAL_FOCUS_OPTIONS, PRIMARY_GOAL_LABELS, PERSONAL_PRIORITY_LABELS } from '../constants/onboarding.js';
 import { INGREDIENT_PREF_LABELS } from '../constants/ingredientPreferences.js';
+import { thresholds } from './nutrients.js';
+
+function n(p) {
+  return p.nutriments ?? {};
+}
+
+function th(p, key) {
+  const t = thresholds(p)[key];
+  return [t.good, t.poor];
+}
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -22,49 +32,49 @@ function scoreLower(value, goodAt, poorAt) {
 
 /** Subscore 0–100 per focus id */
 const FOCUS_SUBSCORE = {
-  leanBulk: (p) => scoreHigher(p.nutriments?.protein, 18, 5),
-  maxCalories: (p) => scoreHigher(p.nutriments?.energyKcal, 400, 150),
-  maxProtein: (p) => scoreHigher(p.nutriments?.protein, 22, 5),
+  leanBulk: (p) => scoreHigher(n(p).protein, ...th(p, "protein")),
+  maxCalories: (p) => scoreHigher(n(p).energyKcal, ...th(p, "energyKcal")),
+  maxProtein: (p) => scoreHigher(n(p).protein, th(p, "protein")[0] + 4, th(p, "protein")[1]),
   cleanEating: (p) => scoreClean(p),
-  fatLoss: (p) => scoreLower(p.nutriments?.energyKcal, 120, 400),
-  fullness: (p) => scoreHigher(p.nutriments?.fiber, 7, 1),
-  preserveMuscle: (p) => scoreHigher(p.nutriments?.protein, 20, 8),
-  lowerCalories: (p) => scoreLower(p.nutriments?.energyKcal, 100, 350),
-  balancedEnergy: (p) => scoreLower(p.nutriments?.energyKcal, 200, 400),
+  fatLoss: (p) => scoreLower(n(p).energyKcal, ...th(p, "energyKcal")),
+  fullness: (p) => scoreHigher(n(p).fiber, ...th(p, "fiber")),
+  preserveMuscle: (p) => scoreHigher(n(p).protein, th(p, "protein")[0] + 6, th(p, "protein")[1] + 3),
+  lowerCalories: (p) => scoreLower(n(p).energyKcal, th(p, "energyKcal")[0] - 20, th(p, "energyKcal")[1]),
+  balancedEnergy: (p) => scoreLower(n(p).energyKcal, th(p, "energyKcal")[0] + 30, th(p, "energyKcal")[1]),
   bodyComposition: (p) =>
     Math.round(
-      (scoreHigher(p.nutriments?.protein, 15, 5) +
-        scoreLower(p.nutriments?.sugar, 8, 20) +
-        scoreLower(p.nutriments?.energyKcal, 250, 450)) /
+      (scoreHigher(n(p).protein, th(p, "protein")[0] + 2, th(p, "protein")[1] + 1) +
+        scoreLower(n(p).sugar, ...th(p, "sugar")) +
+        scoreLower(n(p).energyKcal, th(p, "energyKcal")[0] + 50, th(p, "energyKcal")[1] + 50)) /
         3
     ),
   ingredientQuality: (p) => scoreClean(p),
   flexibleMaintenance: (p) =>
-    Math.round((scoreClean(p) + scoreLower(p.nutriments?.sugar, 12, 25)) / 2),
-  energy: (p) => scoreHigher(p.nutriments?.energyKcal ?? p.nutriments?.carbs, 45, 10),
-  recovery: (p) => scoreHigher(p.nutriments?.protein, 18, 6),
-  hydration: (p) => scoreLower(p.nutriments?.sodium, 300, 700),
-  endurance: (p) => scoreHigher(p.nutriments?.carbs, 40, 8),
-  lowerSodium: (p) => scoreLower(p.nutriments?.sodium, 250, 750),
-  lowerSatFat: (p) => scoreLower(p.nutriments?.saturatedFat, 3, 12),
-  moreFiber: (p) => scoreHigher(p.nutriments?.fiber, 7, 1),
+    Math.round((scoreClean(p) + scoreLower(n(p).sugar, th(p, "sugar")[0] + 4, th(p, "sugar")[1] + 3)) / 2),
+  energy: (p) => scoreHigher(n(p).energyKcal ?? n(p).carbs, th(p, "energyKcal")[0] + 200, th(p, "carbs")[1]),
+  recovery: (p) => scoreHigher(n(p).protein, ...th(p, "protein")),
+  hydration: (p) => scoreLower(n(p).sodium, ...th(p, "sodium")),
+  endurance: (p) => scoreHigher(n(p).carbs, th(p, "carbs")[0] + 15, th(p, "carbs")[1]),
+  lowerSodium: (p) => scoreLower(n(p).sodium, th(p, "sodium")[0] - 50, th(p, "sodium")[1] + 50),
+  lowerSatFat: (p) => scoreLower(n(p).saturatedFat, ...th(p, "saturatedFat")),
+  moreFiber: (p) => scoreHigher(n(p).fiber, ...th(p, "fiber")),
   wholeFoods: (p) => scoreClean(p),
-  lowerSugar: (p) => scoreLower(p.nutriments?.sugar, 6, 22),
-  stableEnergy: (p) => scoreLower(p.nutriments?.sugar, 8, 25),
-  lowerCarbs: (p) => scoreLower(p.nutriments?.carbs, 12, 45),
+  lowerSugar: (p) => scoreLower(n(p).sugar, th(p, "sugar")[0] - 2, th(p, "sugar")[1]),
+  stableEnergy: (p) => scoreLower(n(p).sugar, th(p, "sugar")[0], th(p, "sugar")[1] + 3),
+  lowerCarbs: (p) => scoreLower(n(p).carbs, ...th(p, "carbs")),
   glycemicAware: (p) =>
     Math.round(
-      (scoreLower(p.nutriments?.sugar, 6, 25) + scoreLower(p.nutriments?.carbs, 15, 50)) / 2
+      (scoreLower(n(p).sugar, th(p, "sugar")[0] - 2, th(p, "sugar")[1] + 3) + scoreLower(n(p).carbs, th(p, "carbs")[0] + 3, th(p, "carbs")[1] + 5)) / 2
     ),
-  feelBetter: (p) => Math.round((scoreClean(p) + scoreHigher(p.nutriments?.fiber, 5, 1)) / 2),
+  feelBetter: (p) => Math.round((scoreClean(p) + scoreHigher(n(p).fiber, th(p, "fiber")[0] + 1, th(p, "fiber")[1])) / 2),
   balancedMeals: (p) =>
     Math.round(
-      (scoreHigher(p.nutriments?.protein, 12, 4) +
-        scoreHigher(p.nutriments?.fiber, 5, 1) +
-        scoreLower(p.nutriments?.sugar, 12, 28)) /
+      (scoreHigher(n(p).protein, th(p, "protein")[0], th(p, "protein")[1] + 1) +
+        scoreHigher(n(p).fiber, th(p, "fiber")[0] + 1, th(p, "fiber")[1]) +
+        scoreLower(n(p).sugar, th(p, "sugar")[0] + 4, th(p, "sugar")[1] + 6)) /
         3
     ),
-  avoidCrashes: (p) => scoreLower(p.nutriments?.sugar, 8, 28),
+  avoidCrashes: (p) => scoreLower(n(p).sugar, ...th(p, "sugar")),
 };
 
 function scoreClean(product) {
@@ -188,31 +198,32 @@ export function buildVisualDrivers(product, user, ingredientAnalysis, allergyAna
     const display = PRIORITY_DRIVER_DISPLAY[priorityId];
     if (!display) continue;
     let sub = 50;
-    const n = product.nutriments ?? {};
+    const nn = n(product);
+    const tt = thresholds(product);
     switch (priorityId) {
       case 'protein':
-        sub = scoreHigher(n.protein, 18, 4);
+        sub = scoreHigher(nn.protein, tt.protein.good, tt.protein.poor);
         break;
       case 'fiber':
-        sub = scoreHigher(n.fiber, 7, 1);
+        sub = scoreHigher(nn.fiber, tt.fiber.good, tt.fiber.poor);
         break;
       case 'lowerSugar':
-        sub = scoreLower(n.sugar, 8, 22);
+        sub = nn.sugar == null ? 50 : scoreLower(nn.sugar, tt.sugar.good, tt.sugar.poor);
         break;
       case 'lowerSodium':
-        sub = scoreLower(n.sodium, 300, 700);
+        sub = nn.sodium == null ? 50 : scoreLower(nn.sodium, tt.sodium.good, tt.sodium.poor);
         break;
       case 'lowerCalories':
-        sub = scoreLower(n.energyKcal, 120, 400);
+        sub = nn.energyKcal == null ? 50 : scoreLower(nn.energyKcal, tt.energyKcal.good, tt.energyKcal.poor);
         break;
       case 'higherCalories':
-        sub = scoreHigher(n.energyKcal, 380, 120);
+        sub = nn.energyKcal == null ? 50 : scoreHigher(nn.energyKcal, tt.energyKcal.good + 180, tt.energyKcal.poor);
         break;
       case 'ingredientQuality':
         sub = scoreClean(product);
         break;
       case 'recoveryFuel':
-        sub = scoreHigher(n.protein, 16, 5);
+        sub = scoreHigher(nn.protein, tt.protein.good, tt.protein.poor);
         break;
       default:
         break;
@@ -234,9 +245,9 @@ export function buildVisualDrivers(product, user, ingredientAnalysis, allergyAna
     addDriver({ icon: '⚠️', label: c.label }, -8);
   }
 
-  const sugar = product.nutriments?.sugar;
+  const sugar = n(product).sugar;
   if (sugar != null && sugar > 12 && !usedLabels.has('High Sugar')) {
-    const sugarSub = scoreLower(sugar, 8, 22);
+    const sugarSub = scoreLower(sugar, ...th(product, "sugar"));
     if (sugarSub < 50) {
       addDriver({ icon: '🍬', label: 'High Sugar' }, subscoreToImpact(sugarSub));
     }
