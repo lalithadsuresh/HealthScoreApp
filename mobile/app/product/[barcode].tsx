@@ -68,6 +68,8 @@ export default function ProductResultScreen() {
   const n = product.nutriments;
   const summary = score.scoreSummary;
   const drivers = score.visualDrivers ?? { positive: [], negative: [] };
+  const showScore = score.confidentScore !== false && score.overallScore != null;
+  const dataWarning = score.dataWarning;
 
   return (
     <>
@@ -79,13 +81,29 @@ export default function ProductResultScreen() {
           ) : null}
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
-          <ScoreCircle score={score.overallScore} label="Your score" />
+          {showScore ? (
+            <ScoreCircle score={score.overallScore!} label="Your score" />
+          ) : (
+            <Text style={styles.muted}>Personalized score unavailable</Text>
+          )}
         </Card>
 
-        <ScoreSummaryCard summary={summary} score={score.overallScore} />
+        {dataWarning ? (
+          <Card style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
+            <Text style={styles.bullet}>{dataWarning}</Text>
+          </Card>
+        ) : null}
 
+        {showScore ? (
+        <ScoreSummaryCard summary={summary} score={score.overallScore!} />
+        ) : null}
+
+        {showScore ? (
+        <>
         <DriverChips title="Positive Drivers" drivers={drivers.positive} variant="positive" />
         <DriverChips title="Negative Drivers" drivers={drivers.negative} variant="negative" />
+        </>
+        ) : null}
 
         {score.compatibility?.conflicts?.length ? (
           <Card style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>

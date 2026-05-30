@@ -176,6 +176,12 @@ export default function Scanner() {
               <div>
                 <strong style={{ fontSize: '0.95rem' }}>{p.name}</strong>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.brand}</div>
+                {p.confidence && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {p.isUsSold ? 'U.S. · ' : ''}
+                    {p.confidence} confidence
+                  </div>
+                )}
               </div>
             </div>
           ))}

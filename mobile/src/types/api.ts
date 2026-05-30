@@ -44,6 +44,11 @@ export interface Product {
   ingredientsText?: string;
   additivesTags?: string[];
   nutriScore?: string | null;
+  confidence?: 'high' | 'medium' | 'low';
+  isUsSold?: boolean;
+  hasEnglishName?: boolean;
+  hasEnglishIngredients?: boolean;
+  allergensTags?: string[];
 }
 
 export interface ScoreBreakdownItem {
@@ -94,7 +99,10 @@ export interface VisualDrivers {
 }
 
 export interface ProductScore {
-  overallScore: number;
+  overallScore: number | null;
+  confidentScore?: boolean;
+  confidence?: 'high' | 'medium' | 'low';
+  dataWarning?: string;
   breakdown: ScoreBreakdownItem[];
   whyScoredWell: { text: string; goal: string }[];
   whyLostPoints: { text: string; goal: string }[];
@@ -128,5 +136,7 @@ export interface SearchResult {
   brand: string;
   imageUrl?: string | null;
   nutriments?: Nutriments;
-  previewScore?: number;
+  previewScore?: number | null;
+  confidence?: 'high' | 'medium' | 'low';
+  isUsSold?: boolean;
 }

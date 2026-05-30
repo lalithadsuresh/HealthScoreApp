@@ -53,6 +53,8 @@ export default function ProductResult() {
   const n = product.nutriments ?? {};
   const summary = score.scoreSummary;
   const drivers = score.visualDrivers ?? { positive: [], negative: [] };
+  const showScore = score.confidentScore !== false && score.overallScore != null;
+  const dataWarning = score.dataWarning;
 
   return (
     <AppLayout showNav={false}>
@@ -69,16 +71,38 @@ export default function ProductResult() {
           />
         )}
         <h1 style={{ fontSize: '1.15rem', margin: '0 0 0.25rem' }}>{product.name}</h1>
+        {product.confidence && (
+          <p style={{ margin: '0.25rem 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            Data confidence: {product.confidence}
+            {product.isUsSold ? ' · U.S.' : ''}
+          </p>
+        )}
         {product.brand && (
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{product.brand}</p>
         )}
-        <ScoreCircle score={score.overallScore} label="Your score" />
+        {showScore ? (
+          <ScoreCircle score={score.overallScore} label="Your score" />
+        ) : (
+          <p style={{ margin: '1rem 0', color: 'var(--text-muted)', fontWeight: 600 }}>
+            Personalized score unavailable
+          </p>
+        )}
       </div>
 
-      <ScoreSummaryCard summary={summary} score={score.overallScore} />
+      {dataWarning && (
+        <div className="card" style={{ borderColor: '#fde68a', background: '#fffbeb' }}>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>{dataWarning}</p>
+        </div>
+      )}
 
-      <DriverChips title="Positive Drivers" drivers={drivers.positive} variant="positive" />
-      <DriverChips title="Negative Drivers" drivers={drivers.negative} variant="negative" />
+      {showScore && <ScoreSummaryCard summary={summary} score={score.overallScore} />}
+
+      {showScore && (
+        <>
+          <DriverChips title="Positive Drivers" drivers={drivers.positive} variant="positive" />
+          <DriverChips title="Negative Drivers" drivers={drivers.negative} variant="negative" />
+        </>
+      )}
 
       {score.compatibility?.conflicts?.length > 0 && (
         <div className="card" style={{ borderColor: '#fecaca', background: '#fef2f2' }}>

@@ -3,6 +3,7 @@ import { analyzeIngredientPreferences } from './ingredientScoring.js';
 import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
 import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
 import { buildVisualDrivers, buildScoreSummary } from './focusDrivers.js';
+import { CONFIDENCE_MESSAGES, canConfidentlyScore } from './productConfidence.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -258,6 +259,30 @@ function buildNutrientContributions(product, breakdown, ingredientAnalysis, acti
 }
 
 export function scoreProduct(product, user) {
+  const confidence = product.confidence ?? 'medium';
+
+  if (!canConfidentlyScore(confidence)) {
+    return {
+      confidentScore: false,
+      confidence: 'low',
+      dataWarning: CONFIDENCE_MESSAGES.low,
+      overallScore: null,
+      goalOnlyScore: null,
+      breakdown: [],
+      ingredientMatches: [],
+      ingredientPreferenceScore: null,
+      nutrientContributions: {},
+      whyThisScore: { positiveDrivers: [], negativeDrivers: [], ingredientDrivers: [] },
+      whyScoredWell: [],
+      whyLostPoints: [],
+      goalDisplayName: getGoalDisplayName(user),
+      scoreHeadline: 'Score unavailable',
+      scoreSummary: null,
+      visualDrivers: { positive: [], negative: [] },
+      compatibility: { conflicts: [], warnings: [CONFIDENCE_MESSAGES.low] },
+    };
+  }
+
   const derived = user.primaryGoal
     ? deriveScoringProfile(user)
     : {
@@ -375,8 +400,10 @@ export function scoreProduct(product, user) {
   const topWins = positiveDrivers.slice(0, 4);
   const topLosses = negativeDrivers.slice(0, 4);
 
-  return {
+  const result = {
     overallScore: clamp(overallScore),
+    confidentScore: true,
+    confidence,
     goalOnlyScore,
     breakdown,
     ingredientMatches: ingredientAnalysis.matches,
@@ -400,4 +427,14 @@ export function scoreProduct(product, user) {
       warnings: allergyAnalysis.warnings,
     },
   };
+
+  if (confidence === 'medium') {
+    result.dataWarning = CONFIDENCE_MESSAGES.medium;
+    result.compatibility.warnings = [
+      CONFIDENCE_MESSAGES.medium,
+      ...(result.compatibility.warnings ?? []),
+    ];
+  }
+
+  return result;
 }
