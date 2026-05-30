@@ -28,6 +28,7 @@ Runs `npm run install:all` at repo root (installs root, `server/`, and `client/`
 ### Gotchas
 
 - API fails on boot if MongoDB is not running — start `docker compose` first.
+- On macOS, `docker compose` fails with `Cannot connect to the Docker daemon` when Docker Desktop is not running — start it or use Homebrew `mongodb-community` (see README).
 - `server/.env` is gitignored; copy from `server/.env.example` if missing.
 - Barcode camera needs HTTPS or localhost; manual barcode entry works everywhere.
 - Open Food Facts is public; some barcodes return incomplete nutrition (subscores default toward neutral).
