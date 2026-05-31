@@ -36,6 +36,9 @@ export default function ProductResultScreen() {
           setProduct(data.product);
           setScore(data.score);
           setAlternatives(data.alternatives ?? []);
+          if (data.score?.nutrientDebug) {
+            console.info('[3bite] nutrient debug', data.score.nutrientDebug);
+          }
         }
       } catch (e) {
         if (!cancelled) {
@@ -81,6 +84,13 @@ export default function ProductResultScreen() {
           ) : null}
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
+          {(score.scoringBasisLabel || product.scoringBasisLabel) ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {score.scoringBasisLabel ?? product.scoringBasisLabel}
+              </Text>
+            </View>
+          ) : null}
           {showScore ? (
             <ScoreCircle score={score.overallScore!} label="Your score" />
           ) : (
@@ -125,7 +135,7 @@ export default function ProductResultScreen() {
             <Text style={styles.muted}>{product.ingredientsText}</Text>
           </Card>
         ) : null}
-        <NutritionFacts product={product} />
+        <NutritionFacts product={product} score={score} />
 
         {alternatives.length > 0 && (
           <Card>
@@ -161,6 +171,16 @@ const styles = StyleSheet.create({
   heroImg: { width: 120, height: 120, marginBottom: 8 },
   productName: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
   brand: { color: colors.muted, marginBottom: 8, textAlign: 'center' },
+  badge: {
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  badgeText: { fontSize: 13, fontWeight: '600', color: '#166534', textAlign: 'center' },
   section: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   bullet: { marginBottom: 8, lineHeight: 20, fontSize: 14 },
   muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },

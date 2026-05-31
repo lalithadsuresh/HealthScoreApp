@@ -5,6 +5,7 @@ import AppLayout from '../components/AppLayout.jsx';
 import ScoreCircle, { scoreColor } from '../components/ScoreCircle.jsx';
 import { DriverChips, ScoreSummaryCard } from '../components/ScoreBreakdown.jsx';
 import NutritionFacts from '../components/NutritionFacts.jsx';
+import ScoringBasisBadge from '../components/ScoringBasisBadge.jsx';
 
 export default function ProductResult() {
   const { barcode } = useParams();
@@ -19,7 +20,13 @@ export default function ProductResult() {
       setError('');
       try {
         const res = await api.getProduct(barcode);
-        if (!cancelled) setData(res);
+        if (!cancelled) {
+          setData(res);
+          if (res?.score?.nutrientDebug) {
+            console.info('[3bite] nutrient debug', res.score.nutrientDebug);
+            console.info('[3bite] scoring basis', res.product?.nutritionBasis, res.score?.scoringBasisLabel);
+          }
+        }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Product not found');
       } finally {
@@ -77,6 +84,10 @@ export default function ProductResult() {
             {product.isUsSold ? ' · U.S.' : ''}
           </p>
         )}
+        <ScoringBasisBadge
+          label={score.scoringBasisLabel ?? product.scoringBasisLabel}
+          basis={product.nutritionBasis ?? score.nutritionBasis}
+        />
         {product.brand && (
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{product.brand}</p>
         )}
@@ -131,7 +142,7 @@ export default function ProductResult() {
         </div>
       )}
 
-      <NutritionFacts product={product} />
+      <NutritionFacts product={product} score={score} />
 
       {alternatives?.length > 0 && (
         <div className="card">

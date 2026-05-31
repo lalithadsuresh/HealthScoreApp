@@ -41,16 +41,19 @@ function unavailableLabel(key) {
   return map[key] ?? 'Data unavailable.';
 }
 
-export default function NutritionFacts({ product }) {
-  const basis = product.nutritionBasis ?? '100g';
-  const per100 = product.nutrientsPer100g ?? product.nutriments ?? {};
-  const perServing = product.nutrientsPerServing;
+export default function NutritionFacts({ product, score }) {
+  const basis = product.nutritionBasis ?? score?.nutritionBasis ?? '100g';
+  const per100 = product.nutrientsPer100g ?? {};
+  const perServing = product.nutrientsPerServing ?? product.nutriments;
+  const primary = basis === 'serving' ? perServing : per100;
 
   return (
     <>
-      {product.nutritionBasisWarning && (
+      {(product.nutritionBasisWarning || score?.nutritionBasisWarning) && (
         <div className="card" style={{ borderColor: '#fde68a', background: '#fffbeb', marginBottom: '0.75rem' }}>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>{product.nutritionBasisWarning}</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400e' }}>
+            {score?.nutritionBasisWarning || product.nutritionBasisWarning}
+          </p>
         </div>
       )}
 
@@ -60,10 +63,10 @@ export default function NutritionFacts({ product }) {
             ? `Nutrition (per serving${product.servingLabel ? `: ${product.servingLabel}` : ''})`
             : 'Nutrition (per 100g)'}
         </h3>
-        <NutrientGrid nutriments={product.nutriments ?? per100} unavailableLabel={unavailableLabel} />
+        <NutrientGrid nutriments={primary} unavailableLabel={unavailableLabel} />
       </div>
 
-      {basis === 'serving' && perServing && (
+      {basis === 'serving' && per100 && Object.keys(per100).length > 0 && (
         <div className="card" style={{ opacity: 0.92 }}>
           <h3 style={{ marginTop: 0, fontSize: '0.95rem' }}>Comparison (per 100g)</h3>
           <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>

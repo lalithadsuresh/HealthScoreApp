@@ -1,5 +1,7 @@
 /** Per-serving vs per-100g parsing, scoring basis, and display helpers. */
 
+export const NUTRIENT_PROFILE_VERSION = 2;
+
 export const SERVING_UNAVAILABLE_WARNING =
   'Serving size was unavailable, so this score uses per-100g nutrition data.';
 
@@ -18,17 +20,13 @@ function firstNum(nutriments, keys) {
   return null;
 }
 
-function sodiumMg(nutriments, suffix) {
-  const s100 = suffix === '_serving' ? '' : '_100g';
-  const sodium = firstNum(nutriments, [
-    `sodium${suffix}`,
-    `sodium${s100}`,
-    suffix === '_serving' ? 'sodium' : null,
-  ].filter(Boolean));
+function sodiumMg(nutriments, mode) {
+  const sfx = mode === 'serving' ? '_serving' : '_100g';
+  const sodium = firstNum(nutriments, [`sodium${sfx}`]);
   if (sodium != null) {
     return sodium < 10 ? sodium * 1000 : sodium;
   }
-  const salt = firstNum(nutriments, [`salt${suffix}`, `salt${s100}`]);
+  const salt = firstNum(nutriments, [`salt${sfx}`, 'salt_100g']);
   if (salt != null) return salt * 400;
   return null;
 }
@@ -44,37 +42,50 @@ export function parseNutrientsFromOff(nutriments = {}, mode = '100g') {
   const energyKcal = firstNum(nutriments, [
     `energy-kcal${sfx}`,
     `energy_kcal${sfx}`,
+    `energy${sfx}`,
     plain ? 'energy-kcal' : null,
+    plain ? 'energy_kcal' : null,
     plain ? 'energy' : null,
   ].filter(Boolean));
 
   const protein = firstNum(nutriments, [
     `proteins${sfx}`,
     `protein${sfx}`,
+    `proteins_${mode}`,
     plain ? 'proteins' : null,
+    plain ? 'protein' : null,
   ].filter(Boolean));
 
-  const fat = firstNum(nutriments, [`fat${sfx}`, plain ? 'fat' : null].filter(Boolean));
+  const fat = firstNum(nutriments, [`fat${sfx}`, `fat_${mode}`, plain ? 'fat' : null].filter(Boolean));
+
   const saturatedFat = firstNum(nutriments, [
     `saturated-fat${sfx}`,
     `saturated_fat${sfx}`,
+    `saturated-fat_${mode}`,
     plain ? 'saturated-fat' : null,
   ].filter(Boolean));
 
   const carbs = firstNum(nutriments, [
     `carbohydrates${sfx}`,
     `carbohydrate${sfx}`,
+    `carbohydrates_${mode}`,
     plain ? 'carbohydrates' : null,
   ].filter(Boolean));
 
   const sugar = firstNum(nutriments, [
     `sugars${sfx}`,
     `sugar${sfx}`,
+    `sugars_${mode}`,
+    `sugar_${mode}`,
     plain ? 'sugars' : null,
     plain ? 'sugar' : null,
   ].filter(Boolean));
 
-  const fiber = firstNum(nutriments, [`fiber${sfx}`, plain ? 'fiber' : null].filter(Boolean));
+  const fiber = firstNum(nutriments, [
+    `fiber${sfx}`,
+    `fiber_${mode}`,
+    plain ? 'fiber' : null,
+  ].filter(Boolean));
 
   return {
     energyKcal,
@@ -84,14 +95,49 @@ export function parseNutrientsFromOff(nutriments = {}, mode = '100g') {
     carbs,
     sugar,
     fiber,
-    sodium: sodiumMg(nutriments, sfx),
+    sodium: sodiumMg(nutriments, mode),
   };
 }
 
-export function hasMeaningfulNutrients(n) {
+export function hasMeaningfulNutrients(n, { forServing = false } = {}) {
   if (!n) return false;
-  const keys = ['energyKcal', 'protein', 'sugar', 'fiber', 'sodium', 'carbs', 'fat'];
+  const core = ['energyKcal', 'protein', 'sugar', 'carbs', 'fat'];
+  if (forServing) {
+    return core.some((k) => n[k] != null);
+  }
+  const keys = [...core, 'fiber', 'sodium'];
   return keys.some((k) => n[k] != null);
+}
+
+/** Grams (or ml≈g) in one serving/container. */
+export function parseServingQuantityGrams(raw) {
+  const p = raw?.product ?? raw ?? {};
+  const q = num(p.serving_quantity);
+  if (q != null && q > 0 && q < 5000) return q;
+
+  const ss = String(p.serving_size ?? p.quantity ?? '');
+  const ml = ss.match(/(\d+(?:\.\d+)?)\s*ml\b/i);
+  if (ml) return parseFloat(ml[1]);
+  const flOz = ss.match(/(\d+(?:\.\d+)?)\s*fl\.?\s*oz/i);
+  if (flOz) return parseFloat(flOz[1]) * 29.5735;
+  const liters = ss.match(/(\d+(?:\.\d+)?)\s*l(?:itre|iter)?\b/i);
+  if (liters) return parseFloat(liters[1]) * 1000;
+  const grams = ss.match(/(\d+(?:\.\d+)?)\s*g(?:ram)?s?\b/i);
+  if (grams) return parseFloat(grams[1]);
+  const parenG = ss.match(/\(\s*(\d+(?:\.\d+)?)\s*g\s*\)/i);
+  if (parenG) return parseFloat(parenG[1]);
+
+  return null;
+}
+
+export function deriveNutrientsPerServingFrom100g(nutrientsPer100g, servingGrams) {
+  if (!nutrientsPer100g || !servingGrams || servingGrams <= 0) return null;
+  const factor = servingGrams / 100;
+  const out = {};
+  for (const [key, value] of Object.entries(nutrientsPer100g)) {
+    out[key] = value != null ? Math.round(value * factor * 100) / 100 : null;
+  }
+  return out;
 }
 
 function isLikelyDrink(raw) {
@@ -100,38 +146,51 @@ function isLikelyDrink(raw) {
   const tags = (p.categories_tags ?? []).join(' ').toLowerCase();
   return (
     /\b(ml|millilitre|milliliter|fl\.?\s*oz|fluid ounce|liter|litre|\dl\b)/i.test(text) ||
-    /en:beverages|en:soft-drinks|en:juices|en:waters|en:energy-drinks|en:sodas/.test(tags)
+    /en:beverages|en:soft-drinks|en:juices|en:waters|en:energy-drinks|en:sodas|en:sports-drinks/.test(
+      tags
+    )
   );
 }
 
 export function buildNutrientProfiles(raw, nutrimentsRaw = {}) {
   const p = raw?.product ?? raw ?? {};
   const nutrientsPer100g = parseNutrientsFromOff(nutrimentsRaw, '100g');
-  const nutrientsPerServing = parseNutrientsFromOff(nutrimentsRaw, 'serving');
+
+  let nutrientsPerServing = parseNutrientsFromOff(nutrimentsRaw, 'serving');
+  let offServingComplete = hasMeaningfulNutrients(nutrientsPerServing, { forServing: true });
 
   const servingSizeLabel = (p.serving_size ?? '').trim() || null;
-  const servingQuantity = num(p.serving_quantity);
-  const servingHasNutrients = hasMeaningfulNutrients(nutrientsPerServing);
+  const servingQuantity = parseServingQuantityGrams(raw);
   const hasServingMeta = Boolean(servingSizeLabel || servingQuantity != null);
   const drink = isLikelyDrink(raw);
 
-  let useServing =
-    servingHasNutrients ||
-    (hasServingMeta && (nutrientsPerServing.sugar != null || nutrientsPerServing.energyKcal != null));
+  let servingDerived = false;
+  if (!offServingComplete && servingQuantity != null && hasMeaningfulNutrients(nutrientsPer100g)) {
+    const derived = deriveNutrientsPerServingFrom100g(nutrientsPer100g, servingQuantity);
+    if (hasMeaningfulNutrients(derived, { forServing: true })) {
+      nutrientsPerServing = derived;
+      servingDerived = true;
+    }
+  }
 
-  if (drink && servingHasNutrients) useServing = true;
-  if (p.nutrition_data_per === 'serving' && servingHasNutrients) useServing = true;
+  const servingReady = hasMeaningfulNutrients(nutrientsPerServing, { forServing: true });
+
+  let useServing =
+    servingReady &&
+    (offServingComplete || servingDerived || (drink && servingQuantity != null));
+
+  if (p.nutrition_data_per === 'serving' && servingReady) useServing = true;
 
   const nutritionBasis = useServing ? 'serving' : '100g';
   const primary = useServing ? nutrientsPerServing : nutrientsPer100g;
   const servingLabel =
     servingSizeLabel ||
-    (servingQuantity != null ? `${servingQuantity} g` : null) ||
+    (servingQuantity != null ? `${servingQuantity} ml` : null) ||
     '1 serving';
 
   return {
     nutrientsPer100g,
-    nutrientsPerServing: servingHasNutrients ? nutrientsPerServing : null,
+    nutrientsPerServing: servingReady ? nutrientsPerServing : null,
     nutriments: primary,
     nutritionBasis,
     nutritionBasisWarning: useServing ? null : SERVING_UNAVAILABLE_WARNING,
@@ -139,34 +198,80 @@ export function buildNutrientProfiles(raw, nutrimentsRaw = {}) {
     servingQuantity,
     servingLabel,
     isLikelyDrink: drink,
+    servingDerived,
+    offServingComplete,
+    nutrientProfileVersion: NUTRIENT_PROFILE_VERSION,
+    scoringBasisLabel: useServing
+      ? 'Scored using: Per Serving'
+      : 'Scored using: Per 100g (fallback)',
   };
 }
 
-/** Legacy products cached with only `nutriments`. */
+export function buildNutrientDebug(product) {
+  return {
+    servingSize: product.servingSize ?? null,
+    servingLabel: product.servingLabel ?? null,
+    servingQuantity: product.servingQuantity ?? null,
+    nutritionBasis: product.nutritionBasis,
+    scoringSource: product.nutritionBasis === 'serving' ? 'nutrientsPerServing' : 'nutrientsPer100g',
+    nutrientsPerServing: product.nutrientsPerServing ?? null,
+    nutrientsPer100g: product.nutrientsPer100g ?? null,
+    nutrimentsUsedForScore: product.nutriments ?? null,
+    servingDerived: Boolean(product.servingDerived),
+    offServingComplete: Boolean(product.offServingComplete),
+  };
+}
+
+export function logNutrientDebug(product, context = 'product') {
+  const debug = buildNutrientDebug(product);
+  console.info(`[3bite:nutrients] ${context}`, JSON.stringify(debug, null, 2));
+}
+
+/** Legacy / stale cache — needs refetch if version missing. */
+export function needsNutrientRefetch(product) {
+  if (!product) return true;
+  return (product.nutrientProfileVersion ?? 0) < NUTRIENT_PROFILE_VERSION;
+}
+
 export function migrateProductNutrients(product) {
-  if (product.nutrientsPer100g || product.nutritionBasis) return product;
+  if (!product) return product;
+  if ((product.nutrientProfileVersion ?? 0) >= NUTRIENT_PROFILE_VERSION) {
+    return attachPrimaryNutriments(product);
+  }
 
   const legacy = product.nutriments ?? {};
+  return attachPrimaryNutriments({
+    ...product,
+    nutrientsPer100g: product.nutrientsPer100g ?? legacy,
+    nutrientsPerServing: product.nutrientsPerServing ?? null,
+    nutritionBasis: product.nutritionBasis ?? '100g',
+    nutritionBasisWarning: product.nutritionBasisWarning ?? SERVING_UNAVAILABLE_WARNING,
+    servingLabel: product.servingLabel ?? '100g',
+    nutrientProfileVersion: 0,
+  });
+}
+
+/** Ensure product.nutriments matches the basis used for scoring. */
+export function attachPrimaryNutriments(product) {
+  const basis = product.nutritionBasis === 'serving' ? 'serving' : '100g';
+  const nutriments =
+    basis === 'serving' && product.nutrientsPerServing
+      ? product.nutrientsPerServing
+      : product.nutrientsPer100g ?? product.nutriments ?? {};
+
   return {
     ...product,
-    nutrientsPer100g: legacy,
-    nutrientsPerServing: null,
-    nutriments: legacy,
-    nutritionBasis: '100g',
-    nutritionBasisWarning: SERVING_UNAVAILABLE_WARNING,
-    servingLabel: '100g',
+    nutriments,
+    scoringBasisLabel:
+      product.scoringBasisLabel ??
+      (basis === 'serving' ? 'Scored using: Per Serving' : 'Scored using: Per 100g (fallback)'),
   };
 }
 
 export function resolveForScoring(product) {
-  const p = migrateProductNutrients(product);
-  return {
-    ...p,
-    nutriments: p.nutriments ?? p.nutrientsPer100g ?? {},
-  };
+  return attachPrimaryNutriments(migrateProductNutrients(product));
 }
 
-/** Scoring thresholds differ by basis (per serving vs per 100g). */
 export const SCORE_THRESHOLDS = {
   serving: {
     protein: { good: 12, poor: 3 },
