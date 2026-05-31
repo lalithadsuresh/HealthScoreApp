@@ -4,7 +4,7 @@ import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
 import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
 import { buildVisualDrivers, buildScoreSummary } from './focusDrivers.js';
 import { CONFIDENCE_MESSAGES, canConfidentlyScore } from './productConfidence.js';
-import { resolveForScoring, thresholds, formatNutrientValue } from './nutrients.js';
+import { resolveForScoring, thresholds, formatNutrientValue, buildNutrientDebug } from './nutrients.js';
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -307,6 +307,8 @@ export function scoreProduct(product, user) {
       nutrientsPer100g: product.nutrientsPer100g,
       nutrientsPerServing: product.nutrientsPerServing,
       servingLabel: product.servingLabel,
+      scoringBasisLabel: product.scoringBasisLabel,
+      nutrientDebug: buildNutrientDebug(product),
     };
   }
 
@@ -456,6 +458,8 @@ export function scoreProduct(product, user) {
   };
 
   result.nutritionBasis = product.nutritionBasis;
+  result.scoringBasisLabel = product.scoringBasisLabel;
+  result.nutrientDebug = buildNutrientDebug(product);
   result.nutrientsPer100g = product.nutrientsPer100g;
   result.nutrientsPerServing = product.nutrientsPerServing;
   result.servingLabel = product.servingLabel;

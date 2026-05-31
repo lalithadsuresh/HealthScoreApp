@@ -44,6 +44,9 @@ export interface Product {
   nutritionBasis?: 'serving' | '100g';
   nutritionBasisWarning?: string | null;
   servingLabel?: string | null;
+  scoringBasisLabel?: string | null;
+  servingDerived?: boolean;
+  nutrientProfileVersion?: number;
   servingSize?: string | null;
   novaGroup?: number | null;
   additivesCount?: number;
@@ -109,11 +112,13 @@ export interface ProductScore {
   confidentScore?: boolean;
   confidence?: 'high' | 'medium' | 'low';
   dataWarning?: string;
+  scoringBasisLabel?: string;
   nutritionBasis?: 'serving' | '100g';
   nutritionBasisWarning?: string | null;
   nutrientsPer100g?: Nutriments;
   nutrientsPerServing?: Nutriments | null;
   servingLabel?: string | null;
+  nutrientDebug?: Record<string, unknown>;
   breakdown: ScoreBreakdownItem[];
   whyScoredWell: { text: string; goal: string }[];
   whyLostPoints: { text: string; goal: string }[];

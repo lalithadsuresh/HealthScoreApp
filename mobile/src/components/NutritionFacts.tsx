@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './ui';
 import { colors } from '../theme';
-import type { Nutriments, Product } from '../types/api';
+import type { Nutriments, Product, ProductScore } from '../types/api';
 
 const FIELDS: [string, keyof Nutriments, string][] = [
   ['Calories', 'energyKcal', 'kcal'],
@@ -47,9 +47,11 @@ function Grid({ nutriments }: { nutriments: Nutriments }) {
   );
 }
 
-export function NutritionFacts({ product }: { product: Product }) {
-  const basis = product.nutritionBasis ?? '100g';
-  const per100 = product.nutrientsPer100g ?? product.nutriments ?? {};
+export function NutritionFacts({ product, score }: { product: Product; score?: ProductScore }) {
+  const basis = product.nutritionBasis ?? score?.nutritionBasis ?? '100g';
+  const per100 = product.nutrientsPer100g ?? {};
+  const perServing = product.nutrientsPerServing ?? product.nutriments ?? {};
+  const primary = basis === 'serving' ? perServing : per100;
   const title =
     basis === 'serving'
       ? `Nutrition (per serving${product.servingLabel ? `: ${product.servingLabel}` : ''})`
@@ -57,18 +59,18 @@ export function NutritionFacts({ product }: { product: Product }) {
 
   return (
     <>
-      {product.nutritionBasisWarning ? (
+      {product.nutritionBasisWarning || score?.nutritionBasisWarning ? (
         <Card style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
-          <Text style={styles.warn}>{product.nutritionBasisWarning}</Text>
+          <Text style={styles.warn}>{score?.nutritionBasisWarning || product.nutritionBasisWarning}</Text>
         </Card>
       ) : null}
 
       <Card>
         <Text style={styles.section}>{title}</Text>
-        <Grid nutriments={product.nutriments ?? per100} />
+        <Grid nutriments={primary} />
       </Card>
 
-      {basis === 'serving' && product.nutrientsPerServing ? (
+      {basis === 'serving' && per100 && Object.keys(per100).length > 0 ? (
         <Card>
           <Text style={styles.sectionSmall}>Comparison (per 100g)</Text>
           <Text style={styles.hint}>Compare different package sizes fairly.</Text>

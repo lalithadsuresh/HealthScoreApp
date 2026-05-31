@@ -11,7 +11,11 @@ import {
   searchCachedProducts,
 } from '../services/productCache.js';
 import { scoreProduct } from '../services/scoring.js';
-import { resolveForScoring } from '../services/nutrients.js';
+import {
+  resolveForScoring,
+  buildNutrientDebug,
+  logNutrientDebug,
+} from '../services/nutrients.js';
 import { sortByUsEnglishPriority } from '../services/productConfidence.js';
 
 const router = Router();
@@ -56,30 +60,35 @@ router.get('/barcode/:code', authRequired, loadUser, async (req, res) => {
     if (!product) {
       product = await fetchProductByBarcode(code);
       if (product) {
-        await saveProductToCache(product);
+        product = await saveProductToCache(product);
       }
     }
 
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    const score = scoreProduct(resolveForScoring(product), req.user);
+    const scoringProduct = resolveForScoring(product);
+    logNutrientDebug(scoringProduct, `barcode:${code}${fromCache ? ':cache' : ':off'}`);
+
+    const score = scoreProduct(scoringProduct, req.user);
+    const nutrientDebug = buildNutrientDebug(scoringProduct);
+
     let alternatives = [];
 
     if (score.confidentScore !== false) {
       try {
-        alternatives = await findAlternatives(product);
+        alternatives = await findAlternatives(scoringProduct);
         alternatives = alternatives.map((alt) => {
+          const altResolved = resolveForScoring(alt);
           const altScore = scoreProduct(
             {
-              ...alt,
-              nutriments: alt.nutriments,
-              additivesCount: 0,
+              ...altResolved,
+              additivesCount: alt.additivesCount ?? 0,
               confidence: alt.confidence ?? 'medium',
             },
             req.user
           );
           return {
-            ...alt,
+            ...altResolved,
             previewScore: altScore.confidentScore === false ? null : altScore.overallScore,
           };
         });
@@ -88,7 +97,12 @@ router.get('/barcode/:code', authRequired, loadUser, async (req, res) => {
       }
     }
 
-    res.json({ product, score, alternatives, fromCache });
+    res.json({
+      product: scoringProduct,
+      score: { ...score, nutrientDebug },
+      alternatives,
+      fromCache,
+    });
   } catch (err) {
     console.error(err);
     res.status(502).json({ error: err.message || 'Lookup failed' });
