@@ -9,7 +9,7 @@ export default function ScanHubScreen() {
   return (
     <View style={styles.wrap}>
       <Title>Find a product</Title>
-      <Subtitle>Barcode scan uses your camera. Search uses Open Food Facts.</Subtitle>
+      <Subtitle>Barcode scan uses your camera. Name search updates as you type.</Subtitle>
       <Card>
         <Text style={styles.emoji}>📷</Text>
         <Text style={styles.cardTitle}>Barcode scanner</Text>
@@ -20,7 +20,7 @@ export default function ScanHubScreen() {
         <Text style={styles.emoji}>🔍</Text>
         <Text style={styles.cardTitle}>Search by name</Text>
         <Text style={styles.cardBody}>Look up products when you don&apos;t have a barcode handy.</Text>
-        <Button label="Search products" variant="secondary" onPress={() => router.push('/search')} />
+        <Button label="Open Search" variant="secondary" onPress={() => router.push('/search')} />
       </Card>
     </View>
   );

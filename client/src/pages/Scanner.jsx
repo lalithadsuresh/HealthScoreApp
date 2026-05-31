@@ -3,15 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../api/client.js';
 import AppLayout from '../components/AppLayout.jsx';
+import { useLiveProductSearch } from '../hooks/useLiveProductSearch.js';
 
 export default function Scanner() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('scan');
   const [barcode, setBarcode] = useState('');
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const {
+    query,
+    setQuery,
+    results,
+    loading: searching,
+    error: searchError,
+  } = useLiveProductSearch(400);
   const [error, setError] = useState('');
-  const [searching, setSearching] = useState(false);
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef(null);
   const html5Ref = useRef(null);
@@ -62,21 +67,6 @@ export default function Scanner() {
     };
   }, [tab]);
 
-  const search = async (e) => {
-    e?.preventDefault();
-    if (query.trim().length < 2) return;
-    setSearching(true);
-    setError('');
-    try {
-      const { results: r } = await api.searchProducts(query.trim());
-      setResults(r);
-      if (!r.length) setError('No products found. Try another term.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSearching(false);
-    }
-  };
 
   return (
     <AppLayout>
@@ -136,18 +126,34 @@ export default function Scanner() {
         </>
       ) : (
         <>
-          <form onSubmit={search} className="card">
+          <div className="card">
             <label className="label">Product name</label>
             <input
               className="input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. greek yogurt"
+              placeholder="e.g. gatorade"
+              autoComplete="off"
             />
-            <button type="submit" className="btn btn-primary" disabled={searching}>
-              {searching ? 'Searching…' : 'Search Open Food Facts'}
-            </button>
-          </form>
+            {query.trim().length < 2 && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+                Type at least 2 characters — results appear automatically.
+              </p>
+            )}
+            {searching && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+                Searching…
+              </p>
+            )}
+            {searchError && (
+              <div className="alert alert-error" style={{ marginTop: '0.75rem' }}>
+                {searchError}
+              </div>
+            )}
+          </div>
+          {!searching && query.trim().length >= 2 && !results.length && !searchError && (
+            <p className="page-sub">No products found. Try a different name.</p>
+          )}
           {results.map((p) => (
             <div
               key={p.barcode}
