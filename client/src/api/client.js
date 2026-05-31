@@ -31,6 +31,7 @@ export const api = {
   me: () => request('/auth/me'),
   updateProfile: (body) =>
     request('/user/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAccount: () => request('/user/account', { method: 'DELETE' }),
   searchProducts: (q) => request(`/products/search?q=${encodeURIComponent(q)}`),
   getProduct: (barcode) => request(`/products/barcode/${encodeURIComponent(barcode)}`),
 };

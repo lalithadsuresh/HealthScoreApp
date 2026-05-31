@@ -32,6 +32,7 @@ export function AuthProvider({ children }) {
     const { token, user: u } = await api.login({ email, password });
     setToken(token);
     setUser(u);
+    setLoading(false);
     return u;
   };
 
@@ -39,13 +40,15 @@ export function AuthProvider({ children }) {
     const { token, user: u } = await api.signup({ name, email, password });
     setToken(token);
     setUser(u);
+    setLoading(false);
     return u;
   };
 
-  const logout = () => {
+  const logout = useCallback(async () => {
     setToken(null);
     setUser(null);
-  };
+    setLoading(false);
+  }, []);
 
   const updateUser = (u) => setUser(u);
 

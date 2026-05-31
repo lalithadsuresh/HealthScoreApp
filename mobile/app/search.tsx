@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import {
   FlatList,
   Image,
@@ -11,37 +10,14 @@ import {
   View,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { api } from '../src/api/client';
-import { Button, ErrorBanner, Input, LoadingCenter } from '../src/components/ui';
+import { Input, LoadingCenter } from '../src/components/ui';
+import { useLiveProductSearch } from '../src/hooks/useLiveProductSearch';
 import type { SearchResult } from '../src/types/api';
 import { colors } from '../src/theme';
 
 export default function SearchScreen() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { query, setQuery, results, loading, error } = useLiveProductSearch(400);
   const router = useRouter();
-
-  const search = async () => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setError('Enter at least 2 characters');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const { results: r } = await api.searchProducts(q);
-      setResults(r);
-      if (!r.length) setError('No products found. Try a different search.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Search failed. Check your connection and API URL.');
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <>
@@ -55,20 +31,30 @@ export default function SearchScreen() {
             label="Product name"
             value={query}
             onChangeText={setQuery}
-            placeholder="e.g. greek yogurt"
+            placeholder="e.g. gatorade"
             returnKeyType="search"
-            onSubmitEditing={search}
+            autoCorrect={false}
           />
-          <Button label="Search Open Food Facts" onPress={search} loading={loading} />
-          <ErrorBanner message={error} />
+          {query.trim().length < 2 ? (
+            <Text style={styles.hint}>Type at least 2 characters — results update as you type.</Text>
+          ) : null}
+          {loading ? <Text style={styles.hint}>Searching…</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
-        {loading ? (
+
+        {loading && results.length === 0 ? (
           <LoadingCenter />
         ) : (
           <FlatList
             data={results}
             keyExtractor={(item) => item.barcode}
             contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              query.trim().length >= 2 && !loading && !error ? (
+                <Text style={styles.empty}>No products found. Try a different search.</Text>
+              ) : null
+            }
             renderItem={({ item }) => (
               <Pressable
                 style={styles.row}
@@ -93,11 +79,6 @@ export default function SearchScreen() {
                 </View>
               </Pressable>
             )}
-            ListEmptyComponent={
-              !error ? (
-                <Text style={styles.empty}>Search for a product to see results.</Text>
-              ) : null
-            }
           />
         )}
       </KeyboardAvoidingView>
@@ -108,6 +89,8 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.bg },
   form: { padding: 16, paddingBottom: 0 },
+  hint: { fontSize: 13, color: colors.muted, marginTop: 8 },
+  error: { fontSize: 14, color: colors.danger, marginTop: 8 },
   row: {
     flexDirection: 'row',
     gap: 12,

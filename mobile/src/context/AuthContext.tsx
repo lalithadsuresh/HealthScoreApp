@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: u } = await api.login({ email, password });
     await setToken(token);
     setUser(u);
+    setLoading(false);
     return u;
   };
 
@@ -53,13 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: u } = await api.signup({ name, email, password });
     await setToken(token);
     setUser(u);
+    setLoading(false);
     return u;
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await setToken(null);
     setUser(null);
-  };
+    setLoading(false);
+  }, []);
 
   return (
     <AuthContext.Provider
