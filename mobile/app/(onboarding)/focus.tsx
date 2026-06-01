@@ -41,7 +41,7 @@ export default function FocusScreen() {
         </Pressable>
       ))}
       <Text style={styles.count}>{selected.length}/4 selected</Text>
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
+      <Button label="Back" variant="secondary" onPress={() => router.push({ pathname: '/(onboarding)/primary', params })} />
       <Button
         label="Continue"
         disabled={!selected.length}

@@ -11,9 +11,8 @@ export async function navigateAfterSignOut(
 ) {
   beginSignOut();
   try {
-    if (typeof router.dismissAll === 'function') {
-      router.dismissAll();
-    }
+    // Avoid dismissAll() — it can destabilize navigator state.
+    // Replace directly to signed-out screen.
     router.replace({ pathname: '/signed-out', params: { mode } satisfies SignedOutParams });
     await logout();
   } finally {

@@ -31,7 +31,7 @@ export default function PrioritiesScreen() {
         </Pressable>
       ))}
       <Text style={styles.count}>{selected.length}/5 selected</Text>
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
+      <Button label="Back" variant="secondary" onPress={() => router.push({ pathname: '/(onboarding)/focus', params })} />
       <Button
         label="Continue"
         disabled={!selected.length}

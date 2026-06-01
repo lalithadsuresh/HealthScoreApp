@@ -76,7 +76,7 @@ export default function OnboardingIngredientsScreen() {
           <Text style={styles.hint}>{INGREDIENT_PREF_META[key].hint}</Text>
         </Pressable>
       ))}
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
+      <Button label="Back" variant="secondary" onPress={() => router.push({ pathname: '/(onboarding)/priorities', params })} />
       <Button
         label="Continue to home"
         variant="secondary"

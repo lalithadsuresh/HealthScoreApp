@@ -65,7 +65,7 @@ export default function ProductResultScreen() {
       <View style={styles.wrap}>
         <Stack.Screen options={{ title: 'Product', headerShown: true }} />
         <ErrorBanner message={error || 'Product not found'} />
-        <Button label="Try again" onPress={() => router.back()} />
+        <Button label="Try again" onPress={() => openScanner()} />
       </View>
     );
   }
