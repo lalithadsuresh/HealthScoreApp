@@ -19,15 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    console.log("refreshUser called");
-
     try {
       const { user: u } = await api.me();
-      console.log("api.me success", u?.email);
       setUser(u);
       return u;
-    } catch (err) {
-      console.log("api.me failed, clearing user/token", err);
+    } catch {
       setUser(null);
       await setToken(null);
       return null;
@@ -80,11 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, loading, logout, refreshUser]
   );
 
-  console.log('AuthProvider render', {
-    loading,
-    hasUser: !!user,
-    userEmail: user?.email,
-  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

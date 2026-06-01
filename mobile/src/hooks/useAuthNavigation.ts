@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 
 /** Imperative redirects — avoids <Redirect /> re-render loops in nested layouts. */
@@ -14,8 +14,7 @@ export function useAuthNavigation() {
     } else if (user) {
       router.replace('/(onboarding)/primary');
     }
-    // Intentionally omit `router` from deps — router object may be unstable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- router ref is unstable
   }, [user, loading]);
 }
 
@@ -23,33 +22,30 @@ export function useAuthNavigation() {
 export function useRequireAuth() {
   const { user, loading } = useAuth();
   const router = useRouter();
-
-  const prevUserRef = useRef(user);
+  const segments = useSegments();
+  const didRedirectRef = useRef(false);
 
   useEffect(() => {
-    if (loading) {
-      prevUserRef.current = user;
+    if (loading) return;
+
+    const onSignedOut = segments[0] === 'signed-out';
+    if (onSignedOut) return;
+
+    if (!user) {
+      if (!didRedirectRef.current) {
+        didRedirectRef.current = true;
+        router.replace('/');
+      }
       return;
     }
 
-    const prevUser = prevUserRef.current;
+    didRedirectRef.current = false;
 
-    // If we transitioned from authenticated -> unauthenticated, send to welcome.
-    if (!user && prevUser) {
-      router.replace('/');
-      prevUserRef.current = user;
-      return;
-    }
-
-    // If now authenticated but onboarding incomplete, send to onboarding.
-    if (user && !user.onboardingComplete) {
+    if (!user.onboardingComplete) {
       router.replace('/(onboarding)/primary');
     }
-
-    prevUserRef.current = user;
-    // Intentionally omit `router` from deps — router object may be unstable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- router ref is unstable
+  }, [user, loading, segments.join('/')]);
 
   const blocked = loading || !user || !user.onboardingComplete;
   return { user, loading, blocked };
