@@ -1,15 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LoadingCenter } from '../../src/components/ui';
 import { useRequireAuth } from '../../src/hooks/useAuthNavigation';
 import { colors } from '../../src/theme';
 
 export default function TabsLayout() {
   const { blocked } = useRequireAuth();
 
-  if (blocked) {
-    return <LoadingCenter />;
-  }
+  if (blocked) return null;
 
   return (
     <Tabs

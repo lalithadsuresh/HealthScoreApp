@@ -11,6 +11,7 @@ export function useLiveProductSearch(debounceMs = 400) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emptyMessage, setEmptyMessage] = useState('');
   const cacheRef = useRef(new Map());
   const requestIdRef = useRef(0);
 
@@ -21,19 +22,23 @@ export function useLiveProductSearch(debounceMs = 400) {
       requestIdRef.current += 1;
       setResults([]);
       setError('');
+      setEmptyMessage('');
       setLoading(false);
       return;
     }
 
     if (cacheRef.current.has(q)) {
-      setResults(cacheRef.current.get(q));
-      setError(cacheRef.current.get(q)?.length ? '' : 'No products found. Try another term.');
+      const cached = cacheRef.current.get(q);
+      setResults(cached);
+      setError('');
+      setEmptyMessage(cached?.length ? '' : 'No products found. Try another term.');
       setLoading(false);
       return;
     }
 
     setLoading(true);
     setError('');
+    setEmptyMessage('');
 
     const timer = setTimeout(async () => {
       const id = ++requestIdRef.current;
@@ -48,17 +53,22 @@ export function useLiveProductSearch(debounceMs = 400) {
         }
 
         setResults(r);
-        setError(r.length ? '' : 'No products found. Try another term.');
+        setError('');
+        setEmptyMessage(r.length ? '' : 'No products found. Try another term.');
       } catch (err) {
         if (id !== requestIdRef.current) return;
         setResults([]);
+        setEmptyMessage('');
         setError(err.message || 'Search failed');
       } finally {
         if (id === requestIdRef.current) setLoading(false);
       }
     }, debounceMs);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      requestIdRef.current += 1;
+    };
   }, [query, debounceMs]);
 
   const runSearchNow = async () => {
@@ -67,20 +77,23 @@ export function useLiveProductSearch(debounceMs = 400) {
     const id = ++requestIdRef.current;
     setLoading(true);
     setError('');
+    setEmptyMessage('');
     try {
       const { results: r } = await api.searchProducts(q);
       if (id !== requestIdRef.current) return;
       cacheRef.current.set(q, r);
       setResults(r);
-      setError(r.length ? '' : 'No products found. Try another term.');
+      setError('');
+      setEmptyMessage(r.length ? '' : 'No products found. Try another term.');
     } catch (err) {
       if (id !== requestIdRef.current) return;
       setError(err.message || 'Search failed');
+      setEmptyMessage('');
       setResults([]);
     } finally {
       if (id === requestIdRef.current) setLoading(false);
     }
   };
 
-  return { query, setQuery, results, loading, error, runSearchNow };
+  return { query, setQuery, results, loading, error, emptyMessage, runSearchNow };
 }
