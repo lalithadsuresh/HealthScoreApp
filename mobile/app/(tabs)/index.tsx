@@ -5,6 +5,7 @@ import { GOAL_META } from '../../src/constants/goals';
 import type { GoalKey } from '../../src/constants/goals';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
+import { openScanner } from '../../src/utils/scannerNavigation';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export default function DashboardScreen() {
       <Card>
         <Text style={styles.scanTitle}>Scan or search</Text>
         <Text style={styles.scanBody}>Use your camera for barcodes, or search by product name.</Text>
-        <Button label="Open scanner" onPress={() => router.push('/scanner')} />
+        <Button label="Open scanner" onPress={() => openScanner()} />
         <Button label="Open Search" variant="secondary" onPress={() => router.push('/search')} />
       </Card>
 

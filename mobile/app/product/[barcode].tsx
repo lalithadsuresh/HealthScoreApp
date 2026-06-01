@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { api } from '../../src/api/client';
+import { openScanner } from '../../src/utils/scannerNavigation';
 import { ScoreCircle } from '../../src/components/ScoreCircle';
 import { DriverChips, ScoreSummaryCard } from '../../src/components/ScoreBreakdown';
 import { NutritionFacts } from '../../src/components/NutritionFacts';
@@ -159,7 +160,7 @@ export default function ProductResultScreen() {
           </Card>
         )}
 
-        <Button label="Scan another product" onPress={() => router.push('/scanner')} />
+        <Button label="Scan another product" onPress={() => openScanner()} />
       </ScrollView>
     </>
   );

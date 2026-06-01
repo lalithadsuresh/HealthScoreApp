@@ -2,3 +2,8 @@
 export type SignedOutParams = {
   mode?: 'logout' | 'delete';
 };
+
+/** Params for `/scanner` — explicit scan entry only (not cold-start restore). */
+export type ScannerParams = {
+  intent?: 'scan';
+};
