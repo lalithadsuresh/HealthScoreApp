@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, setToken } from '../api/client';
+import { api, getApiUrl, getToken, setToken } from '../api/client';
 import type { User } from '../types/api';
 
 interface AuthContextValue {
@@ -29,12 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
   }, []);
+
   useEffect(() => {
     let mounted = true;
 
     async function bootstrap() {
       try {
-        const token = await import('../api/client').then((m) => m.getToken());
+        const token = await getToken();
         if (!token) return;
         await refreshUser();
       } finally {
@@ -47,35 +48,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshUser]);
 
   const login = async (email: string, password: string) => {
-    const { token, user: u } = await api.login({ email, password });
-    await setToken(token);
-    setUser(u);
-    setLoading(false);
-    return u;
+    const loginUrl = getApiUrl('/auth/login');
+    console.log('[3Bite] login started');
+    console.log('[3Bite] API URL being called:', loginUrl);
+    try {
+      const { token, user: u } = await api.login({ email, password });
+      console.log('[3Bite] response received');
+      await setToken(token);
+      setUser(u);
+      return u;
+    } catch (err) {
+      console.log('[3Bite] error caught', err);
+      throw err;
+    } finally {
+      console.log('[3Bite] finally reached');
+    }
   };
 
   const signup = async (name: string, email: string, password: string) => {
     const { token, user: u } = await api.signup({ name, email, password });
     await setToken(token);
     setUser(u);
-    setLoading(false);
     return u;
   };
 
   const logout = useCallback(async () => {
     await setToken(null);
     setUser(null);
-    setLoading(false);
   }, []);
 
   const value = useMemo(
     () => ({ user, loading, login, signup, logout, refreshUser, updateUser: setUser }),
     [user, loading, logout, refreshUser]
   );
-
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

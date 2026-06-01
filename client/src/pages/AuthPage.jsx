@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getApiUrl } from '../api/client.js';
 
 export default function AuthPage() {
   const [mode, setMode] = useState('login');
@@ -8,26 +9,37 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    setBusy(true);
+    setSubmitting(true);
+
+    if (mode === 'login') {
+      console.log('[3Bite] login started (AuthPage)');
+      console.log('[3Bite] API URL being called:', getApiUrl('/auth/login'));
+    }
+
     try {
       if (mode === 'signup') {
         await signup(name, email, password);
         navigate('/onboarding');
       } else {
         const u = await login(email, password);
+        console.log('[3Bite] response received (AuthPage)');
         navigate(u.onboardingComplete ? '/dashboard' : '/onboarding');
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong');
+      console.log('[3Bite] error caught (AuthPage)', err);
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong';
+      setError(message || 'Something went wrong');
     } finally {
-      setBusy(false);
+      console.log('[3Bite] finally reached (AuthPage)');
+      setSubmitting(false);
     }
   };
 
@@ -78,8 +90,8 @@ export default function AuthPage() {
             minLength={6}
             required
           />
-          <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'Please wait…' : mode === 'signup' ? 'Sign up' : 'Log in'}
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            {submitting ? 'Please wait…' : mode === 'signup' ? 'Sign up' : 'Log in'}
           </button>
         </form>
 
