@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { getApiUrl } from '../../src/api/client';
 import { Button, Card, ErrorBanner, Input, Subtitle, Title } from '../../src/components/ui';
+import { HOME_ROUTE, ONBOARDING_PRIMARY_ROUTE } from '../../src/constants/routes';
 import { useAuth } from '../../src/context/AuthContext';
 
 export default function LoginScreen() {
@@ -22,8 +23,8 @@ export default function LoginScreen() {
     try {
       const u = await login(email.trim(), password);
       console.log('[3Bite] response received (LoginScreen)');
-      if (u.onboardingComplete) router.replace('/(tabs)/index');
-      else router.replace('/(onboarding)/primary');
+      if (u.onboardingComplete) router.replace(HOME_ROUTE);
+      else router.replace(ONBOARDING_PRIMARY_ROUTE);
     } catch (e) {
       console.log('[3Bite] error caught (LoginScreen)', e);
       const message = e instanceof Error ? e.message : 'Login failed';

@@ -8,6 +8,7 @@ import {
   INGREDIENT_PREF_META,
   INGREDIENT_PREF_NOTE,
 } from '../../src/constants/ingredientPreferences';
+import { HOME_ROUTE } from '../../src/constants/routes';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 import { openScanner } from '../../src/utils/scannerNavigation';
@@ -50,7 +51,7 @@ export default function OnboardingIngredientsScreen() {
       if (goScanner) {
         openScanner();
       } else {
-        router.replace('/(tabs)/index');
+        router.replace(HOME_ROUTE);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');

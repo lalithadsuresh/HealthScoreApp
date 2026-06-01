@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Button, Card, Disclaimer, ErrorBanner, Input, Subtitle, Title } from '../../src/components/ui';
 import { MEDICAL_DISCLAIMER } from '../../src/constants/goals';
+import { ONBOARDING_PRIMARY_ROUTE } from '../../src/constants/routes';
 import { useAuth } from '../../src/context/AuthContext';
 
 export default function SignupScreen() {
@@ -23,7 +24,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signup(name.trim(), email.trim(), password);
-      router.replace('/(onboarding)/primary');
+      router.replace(ONBOARDING_PRIMARY_ROUTE);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Signup failed');
     } finally {

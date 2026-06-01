@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../src/components/ui';
+import { navigateToWelcome } from '../src/utils/navigation';
 import { colors, spacing } from '../src/theme';
 
 export default function SignedOutScreen() {
@@ -12,7 +13,7 @@ export default function SignedOutScreen() {
   const deleted = mode === 'delete';
 
   const goWelcome = () => {
-    router.replace('/');
+    navigateToWelcome(router);
   };
 
   return (

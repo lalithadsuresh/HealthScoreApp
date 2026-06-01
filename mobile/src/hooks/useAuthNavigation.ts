@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
+import { HOME_ROUTE, ONBOARDING_PRIMARY_ROUTE, WELCOME_ROUTE } from '../constants/routes';
 import { useAuth } from '../context/AuthContext';
 import { isSigningOut } from '../utils/signOutGuard';
 
 function isWelcomeRoute(segments: string[]) {
-  return segments.length === 0;
+  const root = segments[0];
+  return !root || root === 'index' || root === '(welcome)';
 }
 
 /** Imperative redirects — avoids <Redirect /> re-render loops in nested layouts. */
@@ -18,9 +20,9 @@ export function useAuthNavigation() {
     if (!isWelcomeRoute(segments)) return;
 
     if (user?.onboardingComplete) {
-      router.replace('/(tabs)/index');
+      router.replace(HOME_ROUTE);
     } else if (user) {
-      router.replace('/(onboarding)/primary');
+      router.replace(ONBOARDING_PRIMARY_ROUTE);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- router ref is unstable
   }, [user, loading, segments.join('/')]);
@@ -39,12 +41,12 @@ export function useRequireAuth() {
     if (root === 'signed-out') return;
 
     if (!user) {
-      router.replace('/');
+      router.replace(WELCOME_ROUTE);
       return;
     }
 
     if (!user.onboardingComplete) {
-      router.replace('/(onboarding)/primary');
+      router.replace(ONBOARDING_PRIMARY_ROUTE);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- router ref is unstable
   }, [user, loading, segments.join('/')]);
