@@ -1,17 +1,18 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, ErrorBanner, Input, Title } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { HOME_ROUTE } from '../src/constants/routes';
+import { HOME_ROUTE, isSameRoute } from '../src/constants/routes';
 import { navigateToWelcome } from '../src/utils/navigation';
 import { isExplicitScannerIntent } from '../src/utils/scannerNavigation';
 import { colors } from '../src/theme';
 
 export default function ScannerScreen() {
   const { intent } = useLocalSearchParams<{ intent?: string }>();
+  const pathname = usePathname();
   const { user, loading } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [manualCode, setManualCode] = useState('');
@@ -24,11 +25,11 @@ export default function ScannerScreen() {
     if (loading) return;
     if (isExplicitScannerIntent(intent)) return;
     if (user?.onboardingComplete) {
-      router.replace(HOME_ROUTE);
+      if (!isSameRoute(pathname, HOME_ROUTE)) router.replace(HOME_ROUTE);
     } else if (!user) {
-      navigateToWelcome(router);
+      navigateToWelcome(router, pathname);
     }
-  }, [loading, user, intent, router]);
+  }, [loading, user, intent, pathname, router]);
 
   if (!loading && !isExplicitScannerIntent(intent) && (user?.onboardingComplete || !user)) {
     return null;
