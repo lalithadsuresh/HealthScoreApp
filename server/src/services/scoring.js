@@ -1,7 +1,13 @@
 import { GOAL_KEYS, GOAL_LABELS } from '../constants/goals.js';
 import { analyzeIngredientPreferences } from './ingredientScoring.js';
-import { analyzeAllergiesAndRestrictions } from './allergyScoring.js';
 import { deriveScoringProfile, getGoalDisplayName } from './profileMapper.js';
+import {
+  userCaresAboutSugar,
+  userCaresAboutCleanEating,
+  userWantsHigherCalories,
+  userWantsLowerCalories,
+  defaultGoalsForUser,
+} from './scoringPolicy.js';
 import { buildVisualDrivers, buildScoreSummary } from './focusDrivers.js';
 import { CONFIDENCE_MESSAGES, canConfidentlyScore } from './productConfidence.js';
 import { resolveForScoring, thresholds, formatNutrientValue, buildNutrientDebug } from './nutrients.js';
@@ -322,9 +328,17 @@ export function scoreProduct(product, user) {
       };
 
   const weights = derived.goalWeights ?? {};
-  const goalsToScore = derived.selectedGoals?.length
-    ? derived.selectedGoals
-    : ['highProtein', 'lowSugar'];
+  let goalsToScore = derived.selectedGoals?.length
+    ? [...derived.selectedGoals]
+    : Object.keys(defaultGoalsForUser(user));
+
+  goalsToScore = goalsToScore.filter((goalKey) => {
+    if (goalKey === 'lowSugar' || goalKey === 'bloodSugarControl') return userCaresAboutSugar(user);
+    if (goalKey === 'cleanIngredients') return userCaresAboutCleanEating(user);
+    if (goalKey === 'loseWeight') return userWantsLowerCalories(user) && !userWantsHigherCalories(user);
+    return true;
+  });
+  if (!goalsToScore.length) goalsToScore = Object.keys(defaultGoalsForUser(user));
 
   const goalDisplayName = getGoalDisplayName(user);
 
@@ -357,10 +371,7 @@ export function scoreProduct(product, user) {
     user.ingredientPreferences ?? {}
   );
 
-  const allergyAnalysis = analyzeAllergiesAndRestrictions(
-    product,
-    user.allergiesRestrictions ?? []
-  );
+  const allergyAnalysis = { conflicts: [], warnings: [], scorePenalty: 0 };
 
   let overallScore = goalOnlyScore;
   if (ingredientAnalysis.hasEnabledPrefs) {
@@ -369,10 +380,6 @@ export function scoreProduct(product, user) {
       (goalOnlyScore * weightTotal + ingredientAnalysis.subscore * ingWeight) /
         (weightTotal + ingWeight)
     );
-  }
-
-  if (allergyAnalysis.scorePenalty > 0) {
-    overallScore = Math.max(0, overallScore - allergyAnalysis.scorePenalty);
   }
 
   const nutrientContributions = buildNutrientContributions(
@@ -399,14 +406,6 @@ export function scoreProduct(product, user) {
     }
   }
 
-  for (const c of allergyAnalysis.conflicts) {
-    negativeDrivers.push({
-      text: c.message,
-      category: 'compatibility',
-      source: c.label,
-    });
-  }
-
   for (const d of ingredientAnalysis.drivers) {
     const entry = { text: d.text, category: 'ingredient', preferenceKey: d.preferenceKey };
     if (d.type === 'positive') {
@@ -418,12 +417,7 @@ export function scoreProduct(product, user) {
     }
   }
 
-  const visualDrivers = buildVisualDrivers(
-    product,
-    user,
-    ingredientAnalysis,
-    allergyAnalysis
-  );
+  const visualDrivers = buildVisualDrivers(product, user, ingredientAnalysis);
   const scoreSummary = buildScoreSummary(user, clamp(overallScore));
 
   const topWins = positiveDrivers.slice(0, 4);
@@ -452,8 +446,8 @@ export function scoreProduct(product, user) {
     scoreSummary,
     visualDrivers,
     compatibility: {
-      conflicts: allergyAnalysis.conflicts,
-      warnings: allergyAnalysis.warnings,
+      conflicts: [],
+      warnings: allergyAnalysis.warnings ?? [],
     },
   };
 

@@ -1,29 +1,71 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { api } from '../../src/api/client';
 import { Button, Disclaimer, Subtitle, Title } from '../../src/components/ui';
 import {
   INGREDIENT_PREF_KEYS,
   INGREDIENT_PREF_META,
   INGREDIENT_PREF_NOTE,
 } from '../../src/constants/ingredientPreferences';
+import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
+import { replaceWithScanner } from '../../src/utils/scannerNavigation';
 
 export default function OnboardingIngredientsScreen() {
   const params = useLocalSearchParams();
   const [prefs, setPrefs] = useState<Record<string, boolean>>(
     Object.fromEntries(INGREDIENT_PREF_KEYS.map((k) => [k, false]))
   );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { updateUser } = useAuth();
   const router = useRouter();
 
   const toggle = (key: string) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
 
+  const completeOnboarding = async (goScanner: boolean) => {
+    setLoading(true);
+    setError('');
+    try {
+      const priorities = String(params.priorities ?? '').split(',').filter(Boolean);
+      const ingredientPreferences = Object.fromEntries(
+        INGREDIENT_PREF_KEYS.map((k) => [k, Boolean(prefs[k])])
+      );
+      const goalFocuses = String(params.goalFocuses ?? params.goalFocus ?? '')
+        .split(',')
+        .filter(Boolean);
+      const { user } = await api.updateProfile({
+        primaryGoal: String(params.primaryGoal),
+        goalFocuses,
+        goalFocus: goalFocuses[0] ?? null,
+        personalPriorities: priorities,
+        ingredientPreferences,
+        onboardingComplete: true,
+      });
+      updateUser(user);
+      if (typeof router.dismissAll === 'function') {
+        router.dismissAll();
+      }
+      if (goScanner) {
+        replaceWithScanner();
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.pad}>
-      <Text style={styles.step}>Step 4 of 6</Text>
+      <Text style={styles.step}>Step 5 of 5</Text>
       <Title>Ingredients to limit</Title>
       <Subtitle>Optional personal preferences.</Subtitle>
       <Disclaimer text={INGREDIENT_PREF_NOTE} />
+      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       {INGREDIENT_PREF_KEYS.map((key) => (
         <Pressable
           key={key}
@@ -36,13 +78,12 @@ export default function OnboardingIngredientsScreen() {
       ))}
       <Button label="Back" variant="secondary" onPress={() => router.back()} />
       <Button
-        label="Continue"
-        onPress={() => {
-          const next: Record<string, string> = { ...params } as Record<string, string>;
-          for (const k of INGREDIENT_PREF_KEYS) next[k] = prefs[k] ? '1' : '0';
-          router.push({ pathname: '/(onboarding)/allergies', params: next });
-        }}
+        label="Continue to home"
+        variant="secondary"
+        onPress={() => completeOnboarding(false)}
+        loading={loading}
       />
+      <Button label="Start scanning" onPress={() => completeOnboarding(true)} loading={loading} />
     </ScrollView>
   );
 }

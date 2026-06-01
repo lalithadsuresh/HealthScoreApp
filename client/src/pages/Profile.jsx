@@ -35,7 +35,6 @@ export default function Profile() {
   const [goalFocuses, setGoalFocuses] = useState([]);
   const [priorities, setPriorities] = useState([]);
   const [ingredientPrefs, setIngredientPrefs] = useState({});
-  const [restrictions, setRestrictions] = useState([]);
 
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
@@ -59,7 +58,6 @@ export default function Profile() {
         INGREDIENT_PREF_KEYS.map((k) => [k, Boolean(user.ingredientPreferences?.[k])])
       )
     );
-    setRestrictions(user.allergiesRestrictions ?? []);
   }, [user]);
 
   const focusOptions = useMemo(() => {
@@ -80,7 +78,6 @@ export default function Profile() {
         goalFocus: goalFocuses[0] ?? null,
         personalPriorities: priorities,
         ingredientPreferences: ingredientPrefs,
-        allergiesRestrictions: restrictions,
       });
       updateUser(u);
       setMsg('Profile saved');
@@ -215,17 +212,6 @@ export default function Profile() {
         );
       })}
 
-      <h3>Allergies & dietary restrictions</h3>
-      {ALLERGY_RESTRICTION_KEYS.map((key) => (
-        <label key={key} className={`goal-chip ${restrictions.includes(key) ? 'selected' : ''}`}>
-          <input
-            type="checkbox"
-            checked={restrictions.includes(key)}
-            onChange={() => toggleInList(restrictions, setRestrictions, key, 20)}
-          />
-          <strong>{ALLERGY_RESTRICTION_LABELS[key]}</strong>
-        </label>
-      ))}
 
       <button type="button" className="btn btn-primary" disabled={busy || authBusy} onClick={save}>
         {busy ? 'Saving…' : 'Save changes'}

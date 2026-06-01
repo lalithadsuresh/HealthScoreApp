@@ -4,6 +4,7 @@ import {
   PRIMARY_GOAL_LABELS,
 } from '../constants/onboarding.js';
 import { getUserFocusIds, getFocusLabelsForUser } from './focusDrivers.js';
+import { defaultGoalsForUser } from './scoringPolicy.js';
 
 const PRIORITY_TO_GOALS = {
   protein: { highProtein: 10, buildMuscle: 6 },
@@ -50,13 +51,13 @@ const FOCUS_BOOSTS = {
 };
 
 const PRIMARY_BASE = {
-  bulk: { highProtein: 6, buildMuscle: 5 },
+  bulk: { highProtein: 8, buildMuscle: 7 },
   cut: { loseWeight: 7, highProtein: 5 },
   maintain: { highProtein: 4, highFiber: 4, loseWeight: 3 },
   athleticPerformance: { highProtein: 6, highFiber: 4 },
   heartHealth: { heartHealth: 9, lowSodium: 6 },
   bloodSugarAwareness: { bloodSugarControl: 9, lowSugar: 7 },
-  generalWellness: { cleanIngredients: 4, highFiber: 4, lowSugar: 4 },
+  generalWellness: { cleanIngredients: 4, highFiber: 5, highProtein: 4 },
 };
 
 function mergeWeights(target, source, scale = 1) {
@@ -94,10 +95,11 @@ export function deriveScoringProfile(user) {
 
   const selectedGoals = GOAL_KEYS.filter((k) => (weights[k] ?? 0) > 0);
   if (!selectedGoals.length) {
-    return {
-      selectedGoals: ['highProtein', 'lowSugar'],
-      goalWeights: { ...DEFAULT_GOAL_WEIGHTS, highProtein: 6, lowSugar: 6 },
-    };
+    const defaults = defaultGoalsForUser(user);
+    const goalWeights = { ...DEFAULT_GOAL_WEIGHTS };
+    for (const k of GOAL_KEYS) goalWeights[k] = 0;
+    for (const [k, v] of Object.entries(defaults)) goalWeights[k] = v;
+    return { selectedGoals: Object.keys(defaults), goalWeights };
   }
 
   for (const k of GOAL_KEYS) {

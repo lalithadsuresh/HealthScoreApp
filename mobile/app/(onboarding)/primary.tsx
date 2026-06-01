@@ -14,7 +14,7 @@ export default function PrimaryGoalScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.pad}>
-      <Text style={styles.step}>Step 1 of 6</Text>
+      <Text style={styles.step}>Step 1 of 5</Text>
       <Title>What are you working toward?</Title>
       <Subtitle>We score food for your goals — not universal “healthy.”</Subtitle>
       <Disclaimer text={MEDICAL} />

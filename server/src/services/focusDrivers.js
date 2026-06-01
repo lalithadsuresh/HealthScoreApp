@@ -1,6 +1,14 @@
 import { GOAL_FOCUS_OPTIONS, PRIMARY_GOAL_LABELS, PERSONAL_PRIORITY_LABELS } from '../constants/onboarding.js';
 import { INGREDIENT_PREF_LABELS } from '../constants/ingredientPreferences.js';
 import { thresholds } from './nutrients.js';
+import {
+  scoreCaloriesForIntent,
+  scoreSugarForUser,
+  shouldIncludeDriver,
+  userCaresAboutSugar,
+  userWantsHigherCalories,
+  userWantsLowerCalories,
+} from './scoringPolicy.js';
 
 function n(p) {
   return p.nutriments ?? {};
@@ -33,13 +41,13 @@ function scoreLower(value, goodAt, poorAt) {
 /** Subscore 0–100 per focus id */
 const FOCUS_SUBSCORE = {
   leanBulk: (p) => scoreHigher(n(p).protein, ...th(p, "protein")),
-  maxCalories: (p) => scoreHigher(n(p).energyKcal, ...th(p, "energyKcal")),
+  maxCalories: (p) => scoreCaloriesForIntent(p, 'more'),
   maxProtein: (p) => scoreHigher(n(p).protein, th(p, "protein")[0] + 4, th(p, "protein")[1]),
   cleanEating: (p) => scoreClean(p),
-  fatLoss: (p) => scoreLower(n(p).energyKcal, ...th(p, "energyKcal")),
+  fatLoss: (p) => scoreCaloriesForIntent(p, 'less'),
   fullness: (p) => scoreHigher(n(p).fiber, ...th(p, "fiber")),
   preserveMuscle: (p) => scoreHigher(n(p).protein, th(p, "protein")[0] + 6, th(p, "protein")[1] + 3),
-  lowerCalories: (p) => scoreLower(n(p).energyKcal, th(p, "energyKcal")[0] - 20, th(p, "energyKcal")[1]),
+  lowerCalories: (p) => scoreCaloriesForIntent(p, 'less'),
   balancedEnergy: (p) => scoreLower(n(p).energyKcal, th(p, "energyKcal")[0] + 30, th(p, "energyKcal")[1]),
   bodyComposition: (p) =>
     Math.round(
@@ -51,7 +59,7 @@ const FOCUS_SUBSCORE = {
   ingredientQuality: (p) => scoreClean(p),
   flexibleMaintenance: (p) =>
     Math.round((scoreClean(p) + scoreLower(n(p).sugar, th(p, "sugar")[0] + 4, th(p, "sugar")[1] + 3)) / 2),
-  energy: (p) => scoreHigher(n(p).energyKcal ?? n(p).carbs, th(p, "energyKcal")[0] + 200, th(p, "carbs")[1]),
+  energy: (p) => scoreCaloriesForIntent(p, 'more'),
   recovery: (p) => scoreHigher(n(p).protein, ...th(p, "protein")),
   hydration: (p) => scoreLower(n(p).sodium, ...th(p, "sodium")),
   endurance: (p) => scoreHigher(n(p).carbs, th(p, "carbs")[0] + 15, th(p, "carbs")[1]),
@@ -164,13 +172,14 @@ export function getFocusLabelsForUser(user) {
     .filter(Boolean);
 }
 
-export function buildVisualDrivers(product, user, ingredientAnalysis, allergyAnalysis) {
+export function buildVisualDrivers(product, user, ingredientAnalysis) {
   const positive = [];
   const negative = [];
   const usedLabels = new Set();
 
   const addDriver = (driver, impact) => {
     if (!driver || impact === 0 || usedLabels.has(driver.label)) return;
+    if (!shouldIncludeDriver(user, driver.label, impact)) return;
     usedLabels.add(driver.label);
     const entry = {
       icon: driver.icon,
@@ -208,16 +217,19 @@ export function buildVisualDrivers(product, user, ingredientAnalysis, allergyAna
         sub = scoreHigher(nn.fiber, tt.fiber.good, tt.fiber.poor);
         break;
       case 'lowerSugar':
-        sub = nn.sugar == null ? 50 : scoreLower(nn.sugar, tt.sugar.good, tt.sugar.poor);
+        if (!userCaresAboutSugar(user)) break;
+        sub = scoreSugarForUser(product, user);
         break;
       case 'lowerSodium':
         sub = nn.sodium == null ? 50 : scoreLower(nn.sodium, tt.sodium.good, tt.sodium.poor);
         break;
       case 'lowerCalories':
-        sub = nn.energyKcal == null ? 50 : scoreLower(nn.energyKcal, tt.energyKcal.good, tt.energyKcal.poor);
+        if (!userWantsLowerCalories(user) && userWantsHigherCalories(user)) break;
+        sub = scoreCaloriesForIntent(product, 'less');
         break;
       case 'higherCalories':
-        sub = nn.energyKcal == null ? 50 : scoreHigher(nn.energyKcal, tt.energyKcal.good + 180, tt.energyKcal.poor);
+        if (!userWantsHigherCalories(user)) break;
+        sub = scoreCaloriesForIntent(product, 'more');
         break;
       case 'ingredientQuality':
         sub = scoreClean(product);
@@ -241,17 +253,7 @@ export function buildVisualDrivers(product, user, ingredientAnalysis, allergyAna
     addDriver(display, impact);
   }
 
-  for (const c of allergyAnalysis.conflicts ?? []) {
-    addDriver({ icon: '⚠️', label: c.label }, -8);
-  }
 
-  const sugar = n(product).sugar;
-  if (sugar != null && sugar > 12 && !usedLabels.has('High Sugar')) {
-    const sugarSub = scoreLower(sugar, ...th(product, "sugar"));
-    if (sugarSub < 50) {
-      addDriver({ icon: '🍬', label: 'High Sugar' }, subscoreToImpact(sugarSub));
-    }
-  }
 
   positive.sort((a, b) => b.impact - a.impact);
   negative.sort((a, b) => b.impact - a.impact);

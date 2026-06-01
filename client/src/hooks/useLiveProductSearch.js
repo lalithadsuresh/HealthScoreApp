@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+function isAbortError(err) {
+  return err?.name === 'AbortError' || err?.message === 'Aborted';
+}
+
 import { api } from '../api/client.js';
 
 const CACHE_MAX = 40;
@@ -87,6 +91,7 @@ export function useLiveProductSearch(debounceMs = 400) {
       setEmptyMessage(r.length ? '' : 'No products found. Try another term.');
     } catch (err) {
       if (id !== requestIdRef.current) return;
+      if (isAbortError(err)) return;
       setError(err.message || 'Search failed');
       setEmptyMessage('');
       setResults([]);

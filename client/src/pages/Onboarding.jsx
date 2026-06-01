@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import {
-  ALLERGY_RESTRICTION_KEYS,
-  ALLERGY_RESTRICTION_LABELS,
   GOAL_FOCUS_OPTIONS,
   PERSONAL_PRIORITIES,
   PERSONAL_PRIORITY_LABELS,
@@ -17,7 +15,7 @@ import {
 } from '../constants/ingredientPreferences.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const STEPS = 6;
+const STEPS = 5;
 const MEDICAL_NOTE =
   'This app is for informational purposes only and is not medical advice. Scores reflect what you told us matters — not a universal “healthy” label.';
 
@@ -75,7 +73,6 @@ export default function Onboarding() {
       INGREDIENT_PREF_KEYS.map((k) => [k, Boolean(user?.ingredientPreferences?.[k])])
     )
   );
-  const [restrictions, setRestrictions] = useState(user?.allergiesRestrictions ?? []);
 
   const focusOptions = useMemo(() => {
     if (!primaryGoal) return [];
@@ -122,7 +119,6 @@ export default function Onboarding() {
         goalFocus: goalFocuses[0] ?? null,
         personalPriorities: priorities,
         ingredientPreferences: ingredientPrefs,
-        allergiesRestrictions: restrictions,
         onboardingComplete: true,
       });
       updateUser(u);
@@ -273,36 +269,6 @@ export default function Onboarding() {
 
         {step === 5 && (
           <>
-            <h1 className="page-title">Allergies & dietary restrictions</h1>
-            <p className="page-sub">
-              We&apos;ll flag possible conflicts on product pages. Always double-check labels.
-            </p>
-            {ALLERGY_RESTRICTION_KEYS.map((key) => {
-              const on = restrictions.includes(key);
-              return (
-                <label key={key} className={`goal-chip ${on ? 'selected' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    onChange={() =>
-                      toggleMulti(restrictions, setRestrictions, key, 20)
-                    }
-                  />
-                  <strong>{ALLERGY_RESTRICTION_LABELS[key]}</strong>
-                </label>
-              );
-            })}
-            <button type="button" className="btn btn-secondary" onClick={() => setStep(4)}>
-              Back
-            </button>
-            <button type="button" className="btn btn-primary" onClick={() => setStep(6)}>
-              Continue
-            </button>
-          </>
-        )}
-
-        {step === 6 && (
-          <>
             <h1 className="page-title">You&apos;re ready to scan</h1>
             <p className="page-sub">
               We&apos;ll score products for your{' '}
@@ -329,7 +295,7 @@ export default function Onboarding() {
               </p>
             </div>
             {error && <div className="alert alert-error">{error}</div>}
-            <button type="button" className="btn btn-secondary" onClick={() => setStep(5)}>
+            <button type="button" className="btn btn-secondary" onClick={() => setStep(4)}>
               Back
             </button>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={finish}>

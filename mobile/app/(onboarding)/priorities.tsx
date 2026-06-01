@@ -18,7 +18,7 @@ export default function PrioritiesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.pad}>
-      <Text style={styles.step}>Step 3 of 6</Text>
+      <Text style={styles.step}>Step 3 of 5</Text>
       <Title>What matters when you choose food?</Title>
       <Subtitle>Pick up to 5 priorities.</Subtitle>
       {PERSONAL_PRIORITIES.map((id) => (
