@@ -22,7 +22,7 @@ export default function LoginScreen() {
     try {
       const u = await login(email.trim(), password);
       console.log('[3Bite] response received (LoginScreen)');
-      if (u.onboardingComplete) router.replace('/(tabs)');
+      if (u.onboardingComplete) router.replace('/(tabs)/index');
       else router.replace('/(onboarding)/primary');
     } catch (e) {
       console.log('[3Bite] error caught (LoginScreen)', e);

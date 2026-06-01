@@ -6,6 +6,7 @@ import {
 import { buildNutrientProfiles, hasMeaningfulNutrients } from './nutrients.js';
 
 const OFF_BASE = 'https://world.openfoodfacts.org';
+const USER_AGENT = '3Bite/1.0 (https://github.com/lalithadsuresh/HealthScoreApp)';
 
 const PRODUCT_FIELDS = [
   'code',
@@ -48,6 +49,16 @@ const SEARCH_FIELDS = [
   'nutrition_data_per',
   'nutriments',
 ].join(',');
+
+export class OpenFoodFactsError extends Error {
+  constructor(message, { status, url, bodySnippet } = {}) {
+    super(message);
+    this.name = 'OpenFoodFactsError';
+    this.status = status;
+    this.url = url;
+    this.bodySnippet = bodySnippet;
+  }
+}
 
 function attachNutrients(product, raw, nutrimentsRaw) {
   const profiles = buildNutrientProfiles(raw, nutrimentsRaw);
@@ -108,13 +119,15 @@ export function normalizeProduct(raw) {
 }
 
 function normalizeSearchHit(item) {
+  if (!item || item.code == null) return null;
+
   const signals = extractRawSignals({ product: item });
   const name =
     signals.nameEn ||
     (signals.englishName ? item.product_name ?? 'Unknown' : 'Unknown');
 
   let product = {
-    barcode: item.code,
+    barcode: String(item.code).replace(/\D/g, '') || String(item.code),
     name,
     brand: item.brands ?? '',
     imageUrl: item.image_front_url ?? null,
@@ -137,20 +150,60 @@ function normalizeSearchHit(item) {
   return product;
 }
 
-export async function fetchProductByBarcode(barcode) {
-  const clean = String(barcode).replace(/\D/g, '');
-  if (!clean) throw new Error('Invalid barcode');
+async function fetchOffJson(url, { label = 'Open Food Facts', logResponse = false } = {}) {
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: {
+        'User-Agent': USER_AGENT,
+        Accept: 'application/json',
+      },
+    });
+  } catch (err) {
+    throw new OpenFoodFactsError(
+      `Network error reaching Open Food Facts: ${err.message}`,
+      { url }
+    );
+  }
 
-  const params = new URLSearchParams({ fields: PRODUCT_FIELDS });
-  const res = await fetch(`${OFF_BASE}/api/v2/product/${clean}.json?${params}`);
-  if (!res.ok) throw new Error('Product lookup failed');
-  const data = await res.json();
-  const product = normalizeProduct(data);
-  if (product) product.barcode = clean;
-  return product;
+  if (logResponse) {
+    console.log('Response status:', res.status);
+  }
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const bodyText = await res.text();
+
+  if (!res.ok) {
+    const snippet = bodyText.replace(/\s+/g, ' ').slice(0, 160);
+    const rateLimited = res.status === 429 || res.status === 503;
+    throw new OpenFoodFactsError(
+      rateLimited
+        ? `Open Food Facts is temporarily unavailable (HTTP ${res.status}). Wait a moment and try again.`
+        : `Open Food Facts request failed (HTTP ${res.status})`,
+      { status: res.status, url, bodySnippet: snippet }
+    );
+  }
+
+  if (!contentType.includes('json') && !bodyText.trim().startsWith('{')) {
+    const snippet = bodyText.replace(/\s+/g, ' ').slice(0, 160);
+    throw new OpenFoodFactsError(
+      'Open Food Facts returned an unexpected HTML response instead of JSON',
+      { status: res.status, url, bodySnippet: snippet }
+    );
+  }
+
+  try {
+    return JSON.parse(bodyText);
+  } catch (err) {
+    throw new OpenFoodFactsError(`Invalid JSON from Open Food Facts: ${err.message}`, {
+      status: res.status,
+      url,
+      bodySnippet: bodyText.slice(0, 160),
+    });
+  }
 }
 
-async function searchOpenFoodFacts(query, limit, { usOnly = true } = {}) {
+function buildSearchUrl(query, limit) {
   const params = new URLSearchParams({
     search_terms: query,
     search_simple: '1',
@@ -160,40 +213,83 @@ async function searchOpenFoodFacts(query, limit, { usOnly = true } = {}) {
     lc: 'en',
     fields: SEARCH_FIELDS,
   });
-
-  if (usOnly) {
-    params.set('tagtype_0', 'countries');
-    params.set('tag_contains_0', 'contains');
-    params.set('tag_0', 'en:united-states');
-  }
-
-  const res = await fetch(`${OFF_BASE}/cgi/search.pl?${params}`);
-  if (!res.ok) throw new Error('Search failed');
-  const data = await res.json();
-
-  const products = (data.products ?? [])
-    .map(normalizeSearchHit)
-    .filter((p) => p.barcode && p.hasEnglishName);
-
-  return sortByUsEnglishPriority(products);
+  return `${OFF_BASE}/cgi/search.pl?${params}`;
 }
 
-export async function searchProducts(query, limit = 12, options = {}) {
-  const usOnly = options.usOnly !== false;
-  let ranked = await searchOpenFoodFacts(query, limit, { usOnly });
+function buildSearchUrlV2(query, limit) {
+  const params = new URLSearchParams({
+    search_terms: query,
+    page_size: String(Math.max(limit * 2, 24)),
+    fields: SEARCH_FIELDS,
+  });
+  return `${OFF_BASE}/api/v2/search?${params}`;
+}
 
-  if (usOnly && ranked.filter((p) => p.confidence !== 'low').length < Math.min(3, limit)) {
-    const broader = await searchOpenFoodFacts(query, limit, { usOnly: false });
-    const seen = new Set(ranked.map((p) => p.barcode));
-    for (const p of broader) {
-      if (!seen.has(p.barcode)) {
-        ranked.push(p);
-        seen.add(p.barcode);
-      }
-    }
-    ranked = sortByUsEnglishPriority(ranked);
+function parseSearchResponse(data) {
+  const rawProducts = Array.isArray(data?.products) ? data.products : [];
+  return rawProducts
+    .map(normalizeSearchHit)
+    .filter((p) => p && p.barcode && p.hasEnglishName);
+}
+
+async function searchOpenFoodFacts(query, limit) {
+  const trimmed = String(query ?? '').trim();
+  if (trimmed.length < 2) {
+    return [];
   }
 
+  const urls = [buildSearchUrl(trimmed, limit), buildSearchUrlV2(trimmed, limit)];
+  let lastError;
+
+  for (const url of urls) {
+    console.log('Search query:', trimmed);
+    console.log('Open Food Facts URL:', url);
+
+    try {
+      const data = await fetchOffJson(url, { label: 'search', logResponse: true });
+      console.log(
+        'Response data:',
+        JSON.stringify({
+          count: data?.count,
+          page: data?.page,
+          productCount: data?.products?.length ?? 0,
+        })
+      );
+
+      const products = parseSearchResponse(data);
+      return sortByUsEnglishPriority(products);
+    } catch (err) {
+      if (err.status != null) console.log('Response status:', err.status);
+      console.log('Response data:', err.bodySnippet ?? err.message);
+      lastError = err;
+      if (err.status === 429 || err.status === 503) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  }
+
+  throw lastError ?? new OpenFoodFactsError('Open Food Facts search failed with no response');
+}
+
+export async function fetchProductByBarcode(barcode) {
+  const clean = String(barcode).replace(/\D/g, '');
+  if (!clean) throw new Error('Invalid barcode');
+
+  const params = new URLSearchParams({ fields: PRODUCT_FIELDS });
+  const url = `${OFF_BASE}/api/v2/product/${clean}.json?${params}`;
+  const data = await fetchOffJson(url, { label: 'product' });
+  const product = normalizeProduct(data);
+  if (product) product.barcode = clean;
+  return product;
+}
+
+export async function searchProducts(query, limit = 12) {
+  const trimmed = String(query ?? '').trim();
+  if (trimmed.length < 2) {
+    return [];
+  }
+
+  const ranked = await searchOpenFoodFacts(trimmed, limit);
   const usable = ranked.filter((p) => p.confidence !== 'low');
   return (usable.length ? usable : ranked).slice(0, limit);
 }
@@ -201,7 +297,7 @@ export async function searchProducts(query, limit = 12, options = {}) {
 export async function findAlternatives(product, limit = 4) {
   const terms = [product.brand, product.name?.split(' ')[0]].filter(Boolean);
   const query = terms[0] ?? 'food';
-  const results = await searchProducts(query, limit + 8, { usOnly: true });
+  const results = await searchProducts(query, limit + 8);
   return results
     .filter((p) => p.barcode !== product.barcode && p.confidence !== 'low')
     .slice(0, limit);
