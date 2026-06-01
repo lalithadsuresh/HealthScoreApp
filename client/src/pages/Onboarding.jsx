@@ -299,7 +299,7 @@ export default function Onboarding() {
               Back
             </button>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={finish}>
-              {busy ? 'Saving…' : 'Start scanning'}
+              {busy ? 'Saving…' : 'Continue to home'}
             </button>
           </>
         )}

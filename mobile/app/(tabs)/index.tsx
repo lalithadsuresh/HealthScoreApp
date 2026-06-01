@@ -21,7 +21,7 @@ export default function DashboardScreen() {
       <Card>
         <Text style={styles.scanTitle}>Scan or search</Text>
         <Text style={styles.scanBody}>Use your camera for barcodes, or search by product name.</Text>
-        <Button label="Open scanner" onPress={() => openScanner()} />
+        <Button label="Start Scanning" onPress={() => openScanner()} />
         <Button label="Open Search" variant="secondary" onPress={() => router.push('/search')} />
       </Card>
 

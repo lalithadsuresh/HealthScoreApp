@@ -18,7 +18,7 @@ export function useAuthNavigation() {
     if (!isWelcomeRoute(segments)) return;
 
     if (user?.onboardingComplete) {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/index');
     } else if (user) {
       router.replace('/(onboarding)/primary');
     }

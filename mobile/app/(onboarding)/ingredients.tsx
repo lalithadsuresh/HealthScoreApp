@@ -10,7 +10,7 @@ import {
 } from '../../src/constants/ingredientPreferences';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
-import { replaceWithScanner } from '../../src/utils/scannerNavigation';
+import { openScanner } from '../../src/utils/scannerNavigation';
 
 export default function OnboardingIngredientsScreen() {
   const params = useLocalSearchParams();
@@ -48,9 +48,9 @@ export default function OnboardingIngredientsScreen() {
         router.dismissAll();
       }
       if (goScanner) {
-        replaceWithScanner();
+        openScanner();
       } else {
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/index');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');

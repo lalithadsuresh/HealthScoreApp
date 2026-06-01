@@ -44,8 +44,11 @@ router.get('/search', authRequired, loadUser, async (req, res) => {
 
     res.json({ results });
   } catch (err) {
-    console.error(err);
-    res.status(502).json({ error: 'Product search failed' });
+    console.error('Product search error:', err);
+    const status = err.status === 429 || err.status === 503 ? 503 : 502;
+    res.status(status).json({
+      error: err.message || 'Product search failed',
+    });
   }
 });
 

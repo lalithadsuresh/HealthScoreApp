@@ -22,7 +22,7 @@ export default function ScannerScreen() {
     if (loading) return;
     if (isExplicitScannerIntent(intent)) return;
     if (user?.onboardingComplete) {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/index');
     } else if (!user) {
       router.replace('/');
     }
@@ -97,7 +97,7 @@ export default function ScannerScreen() {
         onBarcodeScanned={onBarcode}
       />
       <View style={[styles.overlay, { paddingTop: insets.top + 8 }]}>
-        <Button label="← Back" variant="ghost" onPress={() => router.replace('/(tabs)')} />
+        <Button label="← Back" variant="ghost" onPress={() => router.replace('/(tabs)/index')} />
         <Text style={styles.hint}>Align barcode within the frame</Text>
       </View>
       <View style={[styles.manual, { paddingBottom: insets.bottom + 16 }]}>
