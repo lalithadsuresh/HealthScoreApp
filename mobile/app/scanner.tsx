@@ -5,6 +5,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, ErrorBanner, Input, Title } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
+import { HOME_ROUTE } from '../src/constants/routes';
+import { navigateToWelcome } from '../src/utils/navigation';
 import { isExplicitScannerIntent } from '../src/utils/scannerNavigation';
 import { colors } from '../src/theme';
 
@@ -22,9 +24,9 @@ export default function ScannerScreen() {
     if (loading) return;
     if (isExplicitScannerIntent(intent)) return;
     if (user?.onboardingComplete) {
-      router.replace('/(tabs)/index');
+      router.replace(HOME_ROUTE);
     } else if (!user) {
-      router.replace('/');
+      navigateToWelcome(router);
     }
   }, [loading, user, intent, router]);
 
@@ -97,7 +99,7 @@ export default function ScannerScreen() {
         onBarcodeScanned={onBarcode}
       />
       <View style={[styles.overlay, { paddingTop: insets.top + 8 }]}>
-        <Button label="← Back" variant="ghost" onPress={() => router.replace('/(tabs)/index')} />
+        <Button label="← Back" variant="ghost" onPress={() => router.replace(HOME_ROUTE)} />
         <Text style={styles.hint}>Align barcode within the frame</Text>
       </View>
       <View style={[styles.manual, { paddingBottom: insets.bottom + 16 }]}>
