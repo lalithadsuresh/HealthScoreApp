@@ -78,8 +78,11 @@ export const api = {
     }),
   deleteAccount: () =>
     request<{ ok: boolean }>('/user/account', { method: 'DELETE' }),
-  searchProducts: (q: string) =>
-    request<{ results: SearchResult[] }>(`/products/search?q=${encodeURIComponent(q)}`),
+  searchProducts: (q: string, signal?: AbortSignal) =>
+    request<{ results: SearchResult[] }>(
+      `/products/search?q=${encodeURIComponent(q)}`,
+      { signal }
+    ),
   getProduct: (barcode: string) =>
     request<{ product: Product; score: ProductScore; alternatives: SearchResult[] }>(
       `/products/barcode/${encodeURIComponent(barcode)}`

@@ -41,8 +41,11 @@ export default function AllergiesScreen() {
         allergiesRestrictions: selected,
         onboardingComplete: true,
       });
-      updateUser(user);
+      if (typeof router.dismissAll === 'function') {
+        router.dismissAll();
+      }
       router.replace('/scanner');
+      updateUser(user);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
