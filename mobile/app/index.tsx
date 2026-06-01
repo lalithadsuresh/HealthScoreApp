@@ -1,9 +1,10 @@
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Disclaimer, LoadingCenter } from '../src/components/ui';
 import { MEDICAL_DISCLAIMER } from '../src/constants/goals';
 import { useAuth } from '../src/context/AuthContext';
+import { useAuthNavigation } from '../src/hooks/useAuthNavigation';
 import { colors, spacing } from '../src/theme';
 
 export default function WelcomeScreen() {
@@ -11,9 +12,10 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  useAuthNavigation();
+
   if (loading) return <LoadingCenter />;
-  if (user?.onboardingComplete) return <Redirect href="/(tabs)" />;
-  if (user) return <Redirect href="/(onboarding)/primary" />;
+  if (user) return <LoadingCenter />;
 
   return (
     <ScrollView

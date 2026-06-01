@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 
-/** Clear session and return to unauthenticated welcome — avoids stacked auth routes freezing UI. */
+/** Clear session and return to welcome. Navigation only here — layouts must not <Redirect />. */
 export async function navigateToWelcomeAfterSignOut(logout: () => Promise<void>) {
   await logout();
   try {
