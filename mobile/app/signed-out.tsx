@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,10 +12,15 @@ export default function SignedOutScreen() {
   const deleted = mode === 'delete';
 
   const goWelcome = () => {
+    if (typeof router.dismissAll === 'function') {
+      router.dismissAll();
+    }
     router.replace('/');
   };
 
   return (
+    <>
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
     <View style={[styles.wrap, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
       <Pressable
         onPress={goWelcome}
@@ -28,7 +33,7 @@ export default function SignedOutScreen() {
 
       <View style={styles.center}>
         <Text style={styles.emoji}>{deleted ? '✓' : '👋'}</Text>
-        <Text style={styles.title}>{deleted ? 'Account deleted' : 'Logged out!'}</Text>
+        <Text style={styles.title}>{deleted ? 'Account Deleted!' : 'Logged Out!'}</Text>
         <Text style={styles.body}>
           {deleted
             ? 'Your profile and preferences have been removed. You can create a new account anytime.'
@@ -37,6 +42,7 @@ export default function SignedOutScreen() {
         <Button label="Continue" onPress={goWelcome} />
       </View>
     </View>
+    </>
   );
 }
 

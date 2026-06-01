@@ -53,7 +53,7 @@ export default function SearchScreen() {
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               query.trim().length >= 2 && !loading && !error && !emptyMessage ? (
-                <Text style={styles.empty}>No products found. Try a different search.</Text>
+                <Text style={styles.empty}>No results found</Text>
               ) : null
             }
             renderItem={({ item }) => (
