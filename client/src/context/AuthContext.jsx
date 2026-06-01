@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { api, setToken } from '../api/client.js';
+import { api, getApiUrl, setToken } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
@@ -29,25 +29,33 @@ export function AuthProvider({ children }) {
   }, [refreshUser]);
 
   const login = async (email, password) => {
-    const { token, user: u } = await api.login({ email, password });
-    setToken(token);
-    setUser(u);
-    setLoading(false);
-    return u;
+    const loginUrl = getApiUrl('/auth/login');
+    console.log('[3Bite] login started');
+    console.log('[3Bite] API URL being called:', loginUrl);
+    try {
+      const { token, user: u } = await api.login({ email, password });
+      console.log('[3Bite] response received');
+      setToken(token);
+      setUser(u);
+      return u;
+    } catch (err) {
+      console.log('[3Bite] error caught', err);
+      throw err;
+    } finally {
+      console.log('[3Bite] finally reached');
+    }
   };
 
   const signup = async (name, email, password) => {
     const { token, user: u } = await api.signup({ name, email, password });
     setToken(token);
     setUser(u);
-    setLoading(false);
     return u;
   };
 
   const logout = useCallback(async () => {
     setToken(null);
     setUser(null);
-    setLoading(false);
   }, []);
 
   const updateUser = (u) => setUser(u);
