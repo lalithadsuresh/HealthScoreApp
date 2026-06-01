@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,7 +14,9 @@ export function useAuthNavigation() {
     } else if (user) {
       router.replace('/(onboarding)/primary');
     }
-  }, [user, loading, router]);
+    // Intentionally omit `router` from deps — router object may be unstable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading]);
 }
 
 /** Call from protected layouts (e.g. tabs). Sends unauthenticated users to welcome. */
@@ -22,16 +24,32 @@ export function useRequireAuth() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  const prevUserRef = useRef(user);
+
   useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.replace('/');
+    if (loading) {
+      prevUserRef.current = user;
       return;
     }
-    if (!user.onboardingComplete) {
+
+    const prevUser = prevUserRef.current;
+
+    // If we transitioned from authenticated -> unauthenticated, send to welcome.
+    if (!user && prevUser) {
+      router.replace('/');
+      prevUserRef.current = user;
+      return;
+    }
+
+    // If now authenticated but onboarding incomplete, send to onboarding.
+    if (user && !user.onboardingComplete) {
       router.replace('/(onboarding)/primary');
     }
-  }, [user, loading, router]);
+
+    prevUserRef.current = user;
+    // Intentionally omit `router` from deps — router object may be unstable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading]);
 
   const blocked = loading || !user || !user.onboardingComplete;
   return { user, loading, blocked };

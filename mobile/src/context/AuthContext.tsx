@@ -19,28 +19,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
+    console.log("refreshUser called");
+
     try {
       const { user: u } = await api.me();
+      console.log("api.me success", u?.email);
       setUser(u);
       return u;
-    } catch {
+    } catch (err) {
+      console.log("api.me failed, clearing user/token", err);
       setUser(null);
       await setToken(null);
       return null;
     }
   }, []);
-
   useEffect(() => {
-    (async () => {
-      const token = await import('../api/client').then((m) => m.getToken());
-      if (!token) {
-        setLoading(false);
-        return;
+    let mounted = true;
+
+    async function bootstrap() {
+      try {
+        const token = await import('../api/client').then((m) => m.getToken());
+        if (!token) return;
+        await refreshUser();
+      } finally {
+        if (mounted) setLoading(false);
       }
-      await refreshUser();
-      setLoading(false);
-    })();
-  }, [refreshUser]);
+    }
+
+    bootstrap();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const login = async (email: string, password: string) => {
     const { token, user: u } = await api.login({ email, password });
@@ -68,6 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({ user, loading, login, signup, logout, refreshUser, updateUser: setUser }),
     [user, loading, logout, refreshUser]
   );
+
+  console.log('AuthProvider render', {
+    loading,
+    hasUser: !!user,
+    userEmail: user?.email,
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

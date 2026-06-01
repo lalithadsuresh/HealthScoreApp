@@ -20,7 +20,9 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0d9488"
       },
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -30,7 +32,8 @@
           "cameraPermission": "Allow 3Bite to access your camera to scan product barcodes for nutrition lookup."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

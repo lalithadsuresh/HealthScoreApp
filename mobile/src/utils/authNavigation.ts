@@ -9,4 +9,18 @@ export async function navigateAfterSignOut(
 ) {
   router.replace({ pathname: '/signed-out', params: { mode } });
   await logout();
+  // Avoid calling `dismissAll` which can destabilize navigator state during
+  // logout. Replace navigation after a short tick so the navigation tree can
+  // settle — this prevents "route named 'index' not found" errors.
+  try {
+    setTimeout(() => {
+      try {
+        router.replace('/');
+      } catch {
+        /* ignore navigation errors in dev */
+      }
+    }, 50);
+  } catch {
+    /* ignore */
+  }
 }

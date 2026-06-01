@@ -1,10 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRequireAuth } from '../../src/hooks/useAuthNavigation';
+import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
 
 export default function TabsLayout() {
   const { blocked } = useRequireAuth();
+  const { user, loading } = useAuth();
+
+  console.log('TabsLayout render', { loading, hasUser: !!user });
 
   if (blocked) return null;
 
