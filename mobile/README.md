@@ -1,79 +1,26 @@
-# 3Bite — iOS (Expo)
+# 3Bite Mobile (Expo)
 
-React Native + Expo Router + TypeScript mobile app for **3Bite** / HealthScoreApp.
-
-## Prerequisites
-
-- Node.js 20+
-- [Expo Go](https://expo.dev/go) on your iPhone
-- API server running (see repo root `README.md`)
-
-## 1. Start the backend
+## Dev setup
 
 ```bash
-# From repo root — MongoDB + API on port 3001
-docker compose up -d   # or Homebrew MongoDB
-cp server/.env.example server/.env
-npm run install:all
-npm run dev:server
+cp .env.example .env   # set EXPO_PUBLIC_API_URL to your Mac LAN IP for physical devices
+npm run dev:server     # from repo root — API on :3001
+npx expo start -c
 ```
 
-The API must listen on **`0.0.0.0:3001`** so your phone can reach your Mac on the LAN.
+## Routing
 
-## 2. Configure API URL for your iPhone
+- **`/`** — unauthenticated welcome (`app/index.tsx`)
+- **`/(tabs)/index`** — authenticated home
+- **`/scanner`** — camera (only via **Start Scanning** + `intent=scan`)
 
-Copy `.env.example` to `.env` and set your Mac’s LAN IP (not `localhost`):
+If you see errors mentioning `app/(welcome)/_layout.tsx`, delete that folder locally — it was removed; run `npx expo start -c` after pulling.
 
-```bash
-cd mobile
-cp .env.example .env
-# EXPO_PUBLIC_API_URL=http://192.168.1.XXX:3001
-```
+## Routes
 
-Find your Mac IP: **System Settings → Network**, or `ipconfig getifaddr en0`.
-
-## 3. Run in Expo Go
-
-```bash
-cd mobile
-npm install
-npx expo start
-```
-
-### `npm install` errors (ERESOLVE / reanimated)?
-
-Expo SDK 56 requires aligned versions (`react-native-reanimated@~4.3.1`, `expo-constants@~56.x`, etc.).
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-# or: npx expo install --fix
-```
-
-Scan the QR code with the **Camera** app (iOS) → opens in Expo Go.
-
-Press `i` in the terminal for iOS Simulator (uses `localhost` for API if simulator runs on same Mac).
-
-## Screens
-
-| Route | Screen |
-|-------|--------|
+| Path | Screen |
+|------|--------|
 | `/` | Welcome |
-| `/(auth)/login`, `/(auth)/signup` | Auth |
-| `/(onboarding)/goals`, `/(onboarding)/sliders` | Onboarding |
-| `/(tabs)` | Dashboard, Scan hub, Profile |
-| `/scanner` | Camera barcode scan |
-| `/search` | Product search |
-| `/product/[barcode]` | Goal-based score result |
-| `/legal/privacy`, `/legal/terms` | Legal |
-
-## App Store prep (later)
-
-- Use [EAS Build](https://docs.expo.dev/build/introduction/) for production iOS binaries
-- Not configured in this MVP — Expo Go is the target for local testing
-
-## Notes
-
-- Camera permission is requested before scanning
-- Account deletion: Profile → Delete account
-- Scores are **goal-based nutrition support**, not medical advice
+| `/(auth)/login` | Log in |
+| `/(tabs)/index` | Home |
+| `/scanner` | Barcode camera |

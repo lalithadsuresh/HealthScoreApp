@@ -1,11 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, ErrorBanner, Input, Title } from '../src/components/ui';
-import { useAuth } from '../src/context/AuthContext';
 import { HOME_ROUTE, isSameRoute } from '../src/constants/routes';
+import { useAuth } from '../src/context/AuthContext';
 import { navigateToWelcome } from '../src/utils/navigation';
 import { isExplicitScannerIntent } from '../src/utils/scannerNavigation';
 import { colors } from '../src/theme';
@@ -18,18 +19,29 @@ export default function ScannerScreen() {
   const [manualCode, setManualCode] = useState('');
   const [error, setError] = useState('');
   const scannedRef = useRef(false);
+  const pendingRef = useRef(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    if (loading) return;
-    if (isExplicitScannerIntent(intent)) return;
-    if (user?.onboardingComplete) {
-      if (!isSameRoute(pathname, HOME_ROUTE)) router.replace(HOME_ROUTE);
-    } else if (!user) {
-      navigateToWelcome(router, pathname);
-    }
-  }, [loading, user, intent, pathname, router]);
+  useFocusEffect(
+    useCallback(() => {
+      pendingRef.current = false;
+      if (loading) return;
+      if (isExplicitScannerIntent(intent)) return;
+
+      if (user?.onboardingComplete) {
+        if (!isSameRoute(pathname, HOME_ROUTE) && !pendingRef.current) {
+          pendingRef.current = true;
+          router.replace(HOME_ROUTE);
+        }
+        return;
+      }
+
+      if (!user) {
+        navigateToWelcome(router, pathname);
+      }
+    }, [loading, user, intent, pathname, router])
+  );
 
   if (!loading && !isExplicitScannerIntent(intent) && (user?.onboardingComplete || !user)) {
     return null;
