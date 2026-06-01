@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +9,12 @@ import { colors, spacing } from '../src/theme';
 export default function SignedOutScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const deleted = mode === 'delete';
 
   const goWelcome = () => {
-    navigateToWelcome(router);
+    navigateToWelcome(router, pathname);
   };
 
   return (
