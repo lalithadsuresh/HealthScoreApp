@@ -20,7 +20,7 @@ import {
   INGREDIENT_PREF_NOTE,
 } from '../../src/constants/ingredientPreferences';
 import { useAuth } from '../../src/context/AuthContext';
-import { navigateToWelcomeAfterSignOut } from '../../src/utils/authNavigation';
+import { navigateAfterSignOut } from '../../src/utils/authNavigation';
 import { colors } from '../../src/theme';
 
 function toggle(list: string[], id: string, max: number) {
@@ -90,7 +90,7 @@ export default function ProfileScreen() {
     setAuthBusy(true);
     setError('');
     try {
-      await navigateToWelcomeAfterSignOut(logout);
+      await navigateAfterSignOut(logout, 'logout');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not log out');
       setAuthBusy(false);
@@ -111,7 +111,7 @@ export default function ProfileScreen() {
             setError('');
             try {
               await api.deleteAccount();
-              await navigateToWelcomeAfterSignOut(logout);
+              await navigateAfterSignOut(logout, 'delete');
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Could not delete account');
               setAuthBusy(false);

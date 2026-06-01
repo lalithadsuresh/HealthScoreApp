@@ -42,7 +42,7 @@ export default function AllergiesScreen() {
         onboardingComplete: true,
       });
       updateUser(user);
-      router.replace('/(tabs)');
+      router.replace('/scanner');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {

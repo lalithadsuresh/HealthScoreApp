@@ -15,6 +15,7 @@ export default function Scanner() {
     results,
     loading: searching,
     error: searchError,
+    emptyMessage: searchEmpty,
   } = useLiveProductSearch(400);
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -150,8 +151,13 @@ export default function Scanner() {
                 {searchError}
               </div>
             )}
+            {!searchError && searchEmpty && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+                {searchEmpty}
+              </p>
+            )}
           </div>
-          {!searching && query.trim().length >= 2 && !results.length && !searchError && (
+          {!searching && query.trim().length >= 2 && !results.length && !searchError && !searchEmpty && (
             <p className="page-sub">No products found. Try a different name.</p>
           )}
           {results.map((p) => (

@@ -9,6 +9,7 @@ export function useLiveProductSearch(debounceMs = 400) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emptyMessage, setEmptyMessage] = useState('');
   const cacheRef = useRef(new Map<string, SearchResult[]>());
   const requestIdRef = useRef(0);
 
@@ -19,6 +20,7 @@ export function useLiveProductSearch(debounceMs = 400) {
       requestIdRef.current += 1;
       setResults([]);
       setError('');
+      setEmptyMessage('');
       setLoading(false);
       return;
     }
@@ -26,13 +28,15 @@ export function useLiveProductSearch(debounceMs = 400) {
     const cached = cacheRef.current.get(q);
     if (cached) {
       setResults(cached);
-      setError(cached.length ? '' : 'No products found. Try another term.');
+      setError('');
+      setEmptyMessage(cached.length ? '' : 'No products found. Try another term.');
       setLoading(false);
       return;
     }
 
     setLoading(true);
     setError('');
+    setEmptyMessage('');
 
     const timer = setTimeout(async () => {
       const id = ++requestIdRef.current;
@@ -47,18 +51,23 @@ export function useLiveProductSearch(debounceMs = 400) {
         }
 
         setResults(r);
-        setError(r.length ? '' : 'No products found. Try another term.');
+        setError('');
+        setEmptyMessage(r.length ? '' : 'No products found. Try another term.');
       } catch (e) {
         if (id !== requestIdRef.current) return;
         setResults([]);
+        setEmptyMessage('');
         setError(e instanceof Error ? e.message : 'Search failed');
       } finally {
         if (id === requestIdRef.current) setLoading(false);
       }
     }, debounceMs);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      requestIdRef.current += 1;
+    };
   }, [query, debounceMs]);
 
-  return { query, setQuery, results, loading, error };
+  return { query, setQuery, results, loading, error, emptyMessage };
 }

@@ -1,14 +1,12 @@
 import { router } from 'expo-router';
 
-/** Clear session and return to welcome. Navigation only here — layouts must not <Redirect />. */
-export async function navigateToWelcomeAfterSignOut(logout: () => Promise<void>) {
+export type SignOutMode = 'logout' | 'delete';
+
+/** Leave protected routes first, then clear session — avoids tabs loading flash / stuck stack. */
+export async function navigateAfterSignOut(
+  logout: () => Promise<void>,
+  mode: SignOutMode = 'logout'
+) {
+  router.replace({ pathname: '/signed-out', params: { mode } });
   await logout();
-  try {
-    if (typeof router.dismissAll === 'function') {
-      router.dismissAll();
-    }
-  } catch {
-    /* ignore */
-  }
-  router.replace('/');
 }

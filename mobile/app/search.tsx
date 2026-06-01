@@ -16,7 +16,7 @@ import type { SearchResult } from '../src/types/api';
 import { colors } from '../src/theme';
 
 export default function SearchScreen() {
-  const { query, setQuery, results, loading, error } = useLiveProductSearch(400);
+  const { query, setQuery, results, loading, error, emptyMessage } = useLiveProductSearch(400);
   const router = useRouter();
 
   return (
@@ -40,6 +40,7 @@ export default function SearchScreen() {
           ) : null}
           {loading ? <Text style={styles.hint}>Searching…</Text> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          {!error && emptyMessage ? <Text style={styles.hint}>{emptyMessage}</Text> : null}
         </View>
 
         {loading && results.length === 0 ? (
@@ -51,7 +52,7 @@ export default function SearchScreen() {
             contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
-              query.trim().length >= 2 && !loading && !error ? (
+              query.trim().length >= 2 && !loading && !error && !emptyMessage ? (
                 <Text style={styles.empty}>No products found. Try a different search.</Text>
               ) : null
             }
