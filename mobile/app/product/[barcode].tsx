@@ -119,17 +119,6 @@ export default function ProductResultScreen() {
         </>
         ) : null}
 
-        {score.compatibility?.conflicts?.length ? (
-          <Card style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
-            <Text style={styles.section}>Compatibility</Text>
-            {score.compatibility.conflicts.map((c, i) => (
-              <Text key={i} style={styles.bullet}>
-                ⚠ {c.message}
-              </Text>
-            ))}
-          </Card>
-        ) : null}
-
         {product.ingredientsText ? (
           <Card>
             <Text style={styles.section}>Ingredients</Text>

@@ -5,8 +5,6 @@ import { api } from '../../src/api/client';
 import { Button, Card, Disclaimer, ErrorBanner, Input, Subtitle, Title } from '../../src/components/ui';
 import { MEDICAL_DISCLAIMER } from '../../src/constants/goals';
 import {
-  ALLERGY_RESTRICTION_KEYS,
-  ALLERGY_RESTRICTION_LABELS,
   GOAL_FOCUS_OPTIONS,
   PERSONAL_PRIORITIES,
   PERSONAL_PRIORITY_LABELS,
@@ -38,7 +36,6 @@ export default function ProfileScreen() {
   const [goalFocuses, setGoalFocuses] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
   const [ingredientPrefs, setIngredientPrefs] = useState<Record<string, boolean>>({});
-  const [restrictions, setRestrictions] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -55,7 +52,6 @@ export default function ProfileScreen() {
     setIngredientPrefs(
       Object.fromEntries(INGREDIENT_PREF_KEYS.map((k) => [k, Boolean(user.ingredientPreferences?.[k])]))
     );
-    setRestrictions(user.allergiesRestrictions ?? []);
   }, [user]);
 
   const focusOptions = useMemo(
@@ -75,7 +71,6 @@ export default function ProfileScreen() {
         goalFocus: goalFocuses[0] ?? null,
         personalPriorities: priorities,
         ingredientPreferences: ingredientPrefs,
-        allergiesRestrictions: restrictions,
       });
       updateUser(u);
       setMsg('Profile saved');
@@ -194,17 +189,6 @@ export default function ProfileScreen() {
           </Pressable>
         );
       })}
-
-      <Text style={styles.section}>Allergies & restrictions</Text>
-      {ALLERGY_RESTRICTION_KEYS.map((id) => (
-        <Pressable
-          key={id}
-          onPress={() => setRestrictions((p) => toggle(p, id, 20))}
-          style={[styles.chip, restrictions.includes(id) && styles.chipOn]}
-        >
-          <Text style={styles.chipLabel}>{ALLERGY_RESTRICTION_LABELS[id]}</Text>
-        </Pressable>
-      ))}
 
       <Button label="Save changes" onPress={save} loading={busy} disabled={authBusy} />
       <Button label="Privacy policy" variant="secondary" onPress={() => router.push('/legal/privacy')} />

@@ -122,17 +122,6 @@ export default function ProductResult() {
         </>
       )}
 
-      {score.compatibility?.conflicts?.length > 0 && (
-        <div className="card" style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
-          <h3 style={{ marginTop: 0 }}>Compatibility</h3>
-          {score.compatibility.conflicts.map((c, i) => (
-            <p key={i} style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-              ⚠ {c.message}
-            </p>
-          ))}
-        </div>
-      )}
-
       {product.ingredientsText && (
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Ingredients</h3>

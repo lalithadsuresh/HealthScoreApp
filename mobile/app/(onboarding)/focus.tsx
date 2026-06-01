@@ -27,7 +27,7 @@ export default function FocusScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.pad}>
-      <Text style={styles.step}>Step 2 of 6</Text>
+      <Text style={styles.step}>Step 2 of 5</Text>
       <Title>{PRIMARY_GOAL_LABELS[pg]} — your focus</Title>
       <Subtitle>Select all that apply (up to 4). These appear on your scan results.</Subtitle>
       {options.map((o) => (

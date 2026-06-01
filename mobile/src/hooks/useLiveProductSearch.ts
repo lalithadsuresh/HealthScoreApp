@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+function isAbortError(e: unknown) {
+  return e instanceof Error && (e.name === 'AbortError' || e.message === 'Aborted');
+}
+
 import { api } from '../api/client';
 import type { SearchResult } from '../types/api';
 
@@ -60,6 +64,7 @@ export function useLiveProductSearch(debounceMs = 400) {
           setEmptyMessage(r.length ? '' : 'No results found');
         } catch (e) {
           if (abort.signal.aborted || id !== requestIdRef.current) return;
+          if (isAbortError(e)) return;
           setResults([]);
           setEmptyMessage('');
           setError(e instanceof Error ? e.message : 'Search failed');
