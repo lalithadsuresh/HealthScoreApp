@@ -7,6 +7,7 @@ import { ALLERGY_RESTRICTION_KEYS, ALLERGY_RESTRICTION_LABELS } from '../../src/
 import { INGREDIENT_PREF_KEYS } from '../../src/constants/ingredientPreferences';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors } from '../../src/theme';
+import { replaceWithScanner } from '../../src/utils/scannerNavigation';
 
 export default function AllergiesScreen() {
   const params = useLocalSearchParams();
@@ -41,11 +42,11 @@ export default function AllergiesScreen() {
         allergiesRestrictions: selected,
         onboardingComplete: true,
       });
+      updateUser(user);
       if (typeof router.dismissAll === 'function') {
         router.dismissAll();
       }
-      router.replace('/scanner');
-      updateUser(user);
+      replaceWithScanner();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {

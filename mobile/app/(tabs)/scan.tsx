@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { View, StyleSheet, Text } from 'react-native';
 import { Button, Card, Subtitle, Title } from '../../src/components/ui';
 import { colors } from '../../src/theme';
+import { openScanner } from '../../src/utils/scannerNavigation';
 
 export default function ScanHubScreen() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function ScanHubScreen() {
         <Text style={styles.emoji}>📷</Text>
         <Text style={styles.cardTitle}>Barcode scanner</Text>
         <Text style={styles.cardBody}>We&apos;ll ask for camera permission before scanning.</Text>
-        <Button label="Open camera scanner" onPress={() => router.push('/scanner')} />
+        <Button label="Open camera scanner" onPress={() => openScanner()} />
       </Card>
       <Card>
         <Text style={styles.emoji}>🔍</Text>

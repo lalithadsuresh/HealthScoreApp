@@ -1,18 +1,36 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, ErrorBanner, Input, Title } from '../src/components/ui';
+import { useAuth } from '../src/context/AuthContext';
+import { isExplicitScannerIntent } from '../src/utils/scannerNavigation';
 import { colors } from '../src/theme';
 
 export default function ScannerScreen() {
+  const { intent } = useLocalSearchParams<{ intent?: string }>();
+  const { user, loading } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [manualCode, setManualCode] = useState('');
   const [error, setError] = useState('');
   const scannedRef = useRef(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (loading) return;
+    if (isExplicitScannerIntent(intent)) return;
+    if (user?.onboardingComplete) {
+      router.replace('/(tabs)');
+    } else if (!user) {
+      router.replace('/');
+    }
+  }, [loading, user, intent, router]);
+
+  if (!loading && !isExplicitScannerIntent(intent) && (user?.onboardingComplete || !user)) {
+    return null;
+  }
 
   const openProduct = useCallback(
     (code: string) => {
@@ -79,7 +97,7 @@ export default function ScannerScreen() {
         onBarcodeScanned={onBarcode}
       />
       <View style={[styles.overlay, { paddingTop: insets.top + 8 }]}>
-        <Button label="← Back" variant="ghost" onPress={() => router.back()} />
+        <Button label="← Back" variant="ghost" onPress={() => router.replace('/(tabs)')} />
         <Text style={styles.hint}>Align barcode within the frame</Text>
       </View>
       <View style={[styles.manual, { paddingBottom: insets.bottom + 16 }]}>

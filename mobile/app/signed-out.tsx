@@ -12,9 +12,6 @@ export default function SignedOutScreen() {
   const deleted = mode === 'delete';
 
   const goWelcome = () => {
-    if (typeof router.dismissAll === 'function') {
-      router.dismissAll();
-    }
     router.replace('/');
   };
 
